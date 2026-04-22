@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>🧠 DQN · RL 可视化学园</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+  <link rel="stylesheet" href="../css/global.css" />
+  <script>tailwind.config={theme:{extend:{colors:{brand:{500:'#8b5cf6',600:'#7c3aed',100:'#ede9fe'}}}}}</script>
+  <style>
+    .dqn-module { transition: all 0.3s; position: relative; }
+    .dqn-module.active { transform: scale(1.05); box-shadow: 0 0 0 4px #8b5cf6, 0 8px 24px rgba(139,92,246,0.3); }
+    .flow-arrow { stroke: #8b5cf6; stroke-width: 3; fill: none; marker-end: url(#arrow); }
+    .flow-arrow.flowing { stroke-dasharray: 8; animation: flow 1s linear infinite; }
+    @keyframes flow { to { stroke-dashoffset: -16; } }
+    .replay-slot { display:inline-block; width:28px; height:28px; border-radius:4px; background:#e5e7eb; margin:2px; transition: all 0.3s; }
+    .replay-slot.filled { background: linear-gradient(135deg,#a78bfa,#ec4899); }
+    .replay-slot.sampled { background:#facc15; box-shadow:0 0 8px #fbbf24; transform:scale(1.2); }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-brand-50 via-white to-pink-50 min-h-screen">
+  <div class="page-container">
+    <h1 class="page-title">🧠 DQN（深度Q网络）</h1>
+    <p class="page-desc">用神经网络近似 Q 值 + 经验回放 + 目标网络 = 深度强化学习破冰之作</p>
+
+    <!-- 架构流程图 -->
+    <div class="panel mb-6">
+      <h3>🏗️ DQN 整体架构</h3>
+      <div class="relative" style="min-height:400px">
+        <svg viewBox="0 0 800 400" style="width:100%;height:400px;">
+          <defs>
+            <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+              <path d="M0,0 L8,5 L0,10 z" fill="#8b5cf6"/>
+            </marker>
+          </defs>
+          <!-- 4 个方框位置 -->
+          <!-- 环境 -->
+          <g><rect id="m-env" class="dqn-module" x="40" y="30" width="160" height="100" rx="16" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/>
+             <text x="120" y="70" text-anchor="middle" font-size="30">🎮</text>
+             <text x="120" y="105" text-anchor="middle" font-size="14" font-weight="700">环境</text></g>
+          <!-- 经验池 -->
+          <g><rect id="m-buf" class="dqn-module" x="320" y="30" width="180" height="100" rx="16" fill="#dcfce7" stroke="#10b981" stroke-width="2"/>
+             <text x="410" y="60" text-anchor="middle" font-size="18">📚 经验回放池</text>
+             <text x="410" y="85" text-anchor="middle" font-size="11" fill="#065f46">(s, a, r, s') × N</text>
+             <text x="410" y="115" text-anchor="middle" font-size="20">🎲 Random Batch</text></g>
+          <!-- Q 网络 -->
+          <g><rect id="m-q" class="dqn-module" x="600" y="30" width="160" height="100" rx="16" fill="#ede9fe" stroke="#8b5cf6" stroke-width="2"/>
+             <text x="680" y="65" text-anchor="middle" font-size="28">🧠</text>
+             <text x="680" y="105" text-anchor="middle" font-size="14" font-weight="700">Q 网络 (θ)</text></g>
+          <!-- 目标网络 -->
+          <g><rect id="m-tgt" class="dqn-module" x="600" y="270" width="160" height="100" rx="16" fill="#e0e7ff" stroke="#4f46e5" stroke-width="2"/>
+             <text x="680" y="305" text-anchor="middle" font-size="28">🧠</text>
+             <text x="680" y="345" text-anchor="middle" font-size="14" font-weight="700">目标网络 (θ⁻)</text></g>
+          <!-- 损失计算 -->
+          <g><rect id="m-loss" class="dqn-module" x="320" y="270" width="180" height="100" rx="16" fill="#fee2e2" stroke="#ef4444" stroke-width="2"/>
+             <text x="410" y="305" text-anchor="middle" font-size="28">⚡</text>
+             <text x="410" y="340" text-anchor="middle" font-size="13" font-weight="700">损失 = (y - Q)²</text>
+             <text x="410" y="360" text-anchor="middle" font-size="10" fill="#7f1d1d">y = r + γ·max Q⁻</text></g>
+          <!-- 箭头 -->
+          <path id="a1" class="flow-arrow" d="M200,80 L320,80"/>
+          <path id="a2" class="flow-arrow" d="M500,80 L600,80"/>
+          <path id="a3" class="flow-arrow" d="M600,320 L500,320"/>
+          <path id="a4" class="flow-arrow" d="M680,270 L680,130" stroke-dasharray="4 4" marker-end="url(#arrow)"/>
+          <text x="550" y="200" font-size="11" fill="#6b7280" font-style="italic">每 N 步软更新</text>
+          <path id="a5" class="flow-arrow" d="M410,270 L410,130"/>
+          <text x="270" y="205" font-size="11" fill="#6b7280" font-style="italic">BP 更新</text>
+        </svg>
+      </div>
+      <div class="text-center mt-2 flex gap-2 justify-center">
+        <button id="run-btn" class="btn-primary">▶ 播放训练循环</button>
+        <button id="reset-btn" class="btn-secondary">↻ 重置</button>
+      </div>
+    </div>
+
+    <div class="grid md:grid-cols-2 gap-5 mb-6">
+      <div class="panel">
+        <h3>📚 经验回放池状态</h3>
+        <div id="replay-buffer" class="flex flex-wrap"></div>
+        <p class="text-xs text-gray-500 mt-3"><b>黄色：</b>当前采样的 mini-batch（打破数据相关性）。<b>紫粉：</b>已填充的经验。</p>
+      </div>
+      <div class="panel">
+        <h3>📉 损失与奖励曲线</h3>
+        <div id="train-chart" class="chart-box"></div>
+      </div>
+    </div>
+
+    <div class="grid md:grid-cols-3 gap-4">
+      <div class="panel">
+        <h3>📚 经验回放</h3>
+        <p class="text-sm text-gray-600 leading-relaxed">把经验存到缓冲池中，训练时随机抽取 mini-batch。<b class="text-brand-600">打破连续样本的相关性</b>，让训练更稳定。</p>
+      </div>
+      <div class="panel">
+        <h3>👯 目标网络</h3>
+        <p class="text-sm text-gray-600 leading-relaxed">用一个"冷静双胞胎"提供 TD 目标。主网络频繁更新，双胞胎每 C 步复制一次，<b class="text-brand-600">防止目标移动导致发散</b>。</p>
+      </div>
+      <div class="panel">
+        <h3>🎯 损失函数</h3>
+        <p class="text-sm text-gray-600 leading-relaxed">L(θ) = 𝔼[(r + γ·max Q⁻(s',a') − Q(s,a;θ))²]，用 SGD 反向传播更新 θ。</p>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="../js/pages/dqn.js"></script>
+</body>
+</html>

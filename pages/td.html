@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>🧗 时序差分 · RL 可视化学园</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+  <link rel="stylesheet" href="../css/global.css" />
+  <script>tailwind.config={theme:{extend:{colors:{brand:{500:'#8b5cf6',600:'#7c3aed',100:'#ede9fe'}}}}}</script>
+</head>
+<body class="bg-gradient-to-br from-brand-50 via-white to-pink-50 min-h-screen">
+  <div class="page-container">
+    <h1 class="page-title">🧗 时序差分：SARSA vs Q-Learning</h1>
+    <p class="page-desc">悬崖行走环境：左下起点 🏁 → 右下终点 💎，掉悬崖 -100 分。观察两种算法的"性格差异"！</p>
+
+    <div class="bg-gradient-to-r from-brand-100 to-pink-100 border-l-4 border-brand-500 rounded-lg p-4 mb-6 text-sm leading-relaxed">
+      <b>👧 SARSA（on-policy）：</b>用下一步实际动作更新 Q → 学到"探索过程中的最优"，保守远离悬崖。<br/>
+      <b>🦸 Q-Learning（off-policy）：</b>用下一步最优动作更新 Q → 学到"真正最优路径"，训练时常掉悬崖。
+    </div>
+
+    <div class="panel mb-6">
+      <div class="flex items-center flex-wrap gap-4">
+        <div>
+          <label class="block text-sm font-semibold mb-2">算法</label>
+          <div class="btn-group flex">
+            <button data-algo="sarsa" class="active">👧 SARSA</button>
+            <button data-algo="qlearn">🦸 Q-Learning</button>
+            <button data-algo="both">🆚 对比</button>
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-semibold mb-1">α: <span id="alpha-val" class="text-brand-600">0.50</span></label>
+          <input type="range" id="alpha" min="0.01" max="1" step="0.01" value="0.5" />
+        </div>
+        <div>
+          <label class="block text-sm font-semibold mb-1">ε: <span id="eps-val" class="text-brand-600">0.10</span></label>
+          <input type="range" id="eps" min="0" max="1" step="0.01" value="0.1" />
+        </div>
+        <div class="flex-1"></div>
+        <button id="train-btn" class="btn-primary">▶ 训练 200 回合</button>
+        <button id="reset-btn" class="btn-secondary">↻ 重置</button>
+      </div>
+    </div>
+
+    <div id="scene-picker-slot"></div>
+
+    <div id="dual-container" class="grid md:grid-cols-2 gap-5 mb-6">
+      <!-- 填充 -->
+    </div>
+
+    <div class="panel mb-6">
+      <h3>📈 每回合累计奖励对比</h3>
+      <div id="reward-chart" class="chart-box"></div>
+    </div>
+
+    <div class="grid md:grid-cols-2 gap-4">
+      <div class="panel">
+        <h3>📐 更新公式</h3>
+        <p class="text-sm leading-relaxed">
+          <b>SARSA：</b> Q(s,a) ← Q(s,a) + α[ r + γ·<b>Q(s',a')</b> − Q(s,a) ]<br/>
+          <b>Q-Learning：</b> Q(s,a) ← Q(s,a) + α[ r + γ·<b class="text-pink-500">max<sub>a'</sub> Q(s',a')</b> − Q(s,a) ]
+        </p>
+      </div>
+      <div class="panel">
+        <h3>💡 为什么差异这么大？</h3>
+        <p class="text-sm text-gray-600 leading-relaxed">SARSA 估计的是"当前策略（含探索噪声）下的路径价值"，所以它会把探索出错的可能也计入，因此更保守。Q-Learning 假装下一步总能选最优动作，不考虑自己的探索失误。</p>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="../js/pages/td.js"></script>
+</body>
+</html>

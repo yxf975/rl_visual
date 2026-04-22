@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>🌱 初探强化学习 · RL 可视化学园</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="../css/global.css" />
+  <script>
+    tailwind.config = { theme: { extend: { colors: { brand: { 50:'#f5f3ff',100:'#ede9fe',200:'#ddd6fe',300:'#c4b5fd',400:'#a78bfa',500:'#8b5cf6',600:'#7c3aed',700:'#6d28d9' } } } } }
+  </script>
+  <style>
+    /* Agent ↔ Environment 交互循环动画 */
+    .loop-stage {
+      position: relative; width: 100%; max-width: 640px; height: 340px;
+      margin: 0 auto; background: linear-gradient(135deg,#faf5ff,#fdf2f8);
+      border-radius: 1.25rem; border: 2px dashed #c4b5fd; overflow: hidden;
+    }
+    .loop-box {
+      position: absolute; width: 180px; padding: 1rem 0.9rem;
+      background: white; border-radius: 1rem; border: 2px solid #c4b5fd;
+      text-align: center; box-shadow: 0 6px 18px rgba(139,92,246,0.12);
+    }
+    .loop-box.agent { left: 30px; top: 120px; border-color: #ec4899; }
+    .loop-box.env { right: 30px; top: 120px; border-color: #8b5cf6; }
+    .loop-emoji { font-size: 2.6rem; line-height: 1; }
+    .loop-title { font-weight: 800; font-size: 0.95rem; margin-top: 0.25rem; }
+    .loop-desc { font-size: 0.72rem; color: #6b7280; margin-top: 0.25rem; }
+
+    .loop-arrow {
+      position: absolute; left: 210px; width: 220px; height: 48px;
+      display: flex; align-items: center; justify-content: center;
+      color: #8b5cf6; font-weight: 800; font-size: 0.78rem;
+      pointer-events: none;
+    }
+    .loop-arrow.top { top: 100px; }
+    .loop-arrow.bottom { top: 200px; }
+    .loop-arrow svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+    .loop-arrow .label {
+      position: relative; background: white; padding: 0.15rem 0.55rem;
+      border-radius: 9999px; border: 1px solid #c4b5fd;
+    }
+    .loop-arrow.active .label { background: #fde68a; border-color: #f59e0b; color: #b45309; }
+    .loop-box.active { transform: scale(1.06); box-shadow: 0 10px 28px rgba(236,72,153,0.22); }
+    .loop-box { transition: transform 0.3s ease, box-shadow 0.3s ease; }
+
+    .loop-status {
+      position: absolute; left: 50%; top: 16px; transform: translateX(-50%);
+      font-size: 0.78rem; font-weight: 700; color: #7c3aed;
+      background: white; padding: 0.3rem 0.8rem; border-radius: 9999px;
+      border: 1px solid #ddd6fe;
+    }
+    @media (max-width: 640px) {
+      .loop-stage { height: 480px; }
+      .loop-box { width: 86%; left: 7% !important; right: 7% !important; }
+      .loop-box.agent { top: 70px; }
+      .loop-box.env { top: 290px; }
+      .loop-arrow { left: 7% !important; width: 86% !important; height: 30px; }
+      .loop-arrow.top { top: 200px; }
+      .loop-arrow.bottom { top: 240px; }
+    }
+
+    /* 六要素卡片 */
+    .concept-card {
+      background: white; border-radius: 1rem; padding: 1.1rem 1rem;
+      border: 1px solid #ede9fe; box-shadow: 0 4px 14px rgba(124,58,237,0.06);
+      transition: all 0.2s; display: flex; gap: 0.8rem; align-items: flex-start;
+    }
+    .concept-card:hover { transform: translateY(-3px); box-shadow: 0 10px 24px rgba(236,72,153,0.14); border-color: #c4b5fd; }
+    .concept-emoji { font-size: 2.2rem; line-height: 1; }
+    .concept-name { font-weight: 800; color: #6d28d9; font-size: 0.95rem; }
+    .concept-def { font-size: 0.82rem; color: #4b5563; margin-top: 0.2rem; line-height: 1.5; }
+    .concept-analogy { font-size: 0.75rem; color: #ec4899; margin-top: 0.35rem; font-style: italic; }
+
+    /* 对比表 */
+    .compare-table { width: 100%; border-collapse: separate; border-spacing: 0; overflow: hidden; border-radius: 0.9rem; border: 1px solid #ede9fe; }
+    .compare-table th, .compare-table td { padding: 0.7rem 0.8rem; text-align: left; font-size: 0.82rem; border-bottom: 1px solid #ede9fe; vertical-align: top; }
+    .compare-table thead { background: linear-gradient(135deg,#f5f3ff,#fce7f3); }
+    .compare-table th { color: #6d28d9; font-weight: 800; }
+    .compare-table td.highlight { background: #fdf2f8; font-weight: 600; color: #be185d; }
+    .compare-table tr:last-child td { border-bottom: none; }
+
+    /* 应用案例 */
+    .case-card {
+      background: linear-gradient(135deg, var(--bg1), var(--bg2));
+      border-radius: 1.1rem; padding: 1.2rem 1rem; border: 2px solid white;
+      box-shadow: 0 6px 18px rgba(124,58,237,0.08);
+      min-height: 150px;
+    }
+    .case-emoji { font-size: 2.6rem; }
+    .case-title { font-weight: 800; margin-top: 0.25rem; color: #1f2937; }
+    .case-desc { font-size: 0.78rem; color: #4b5563; margin-top: 0.3rem; line-height: 1.5; }
+
+    /* 学习路径（五步） */
+    .roadmap-step {
+      position: relative; padding: 1rem; background: white;
+      border-radius: 0.9rem; border-left: 5px solid #c4b5fd;
+      box-shadow: 0 4px 12px rgba(124,58,237,0.06);
+    }
+    .roadmap-step:hover { border-left-color: #ec4899; }
+    .roadmap-num {
+      display: inline-block; background: #8b5cf6; color: white;
+      font-size: 0.7rem; font-weight: 800; padding: 0.1rem 0.5rem;
+      border-radius: 9999px; letter-spacing: 0.05em;
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-brand-50 via-white to-pink-50 min-h-screen">
+  <div class="page-container">
+    <h1 class="page-title">🌱 初探强化学习</h1>
+    <p class="page-desc">在进入任何具体算法之前，先用一张大图搞懂 RL 的全貌。</p>
+
+    <!-- ① 一句话定义 + 交互循环 -->
+    <section class="panel mb-6">
+      <h3>💡 一句话定义</h3>
+      <div class="bg-gradient-to-r from-brand-100 to-pink-100 border-l-4 border-brand-500 rounded-lg p-4 mb-4 text-sm leading-relaxed">
+        <b>强化学习（Reinforcement Learning, RL）</b>是一种让<b class="text-brand-600">智能体（Agent）</b>在与<b class="text-pink-500">环境（Environment）</b>的反复互动中，<b>通过试错</b>学习"在什么情况下做什么能拿到最多奖励"的机器学习方法。
+      </div>
+
+      <h3 class="mt-4">🔁 核心交互循环</h3>
+      <p class="text-xs text-gray-500 mb-3">点击下方按钮，观察 Agent 与 Environment 如何"一来一回"地交互。每一步都会高亮当前环节。</p>
+
+      <div class="loop-stage" id="loop-stage">
+        <div class="loop-status" id="loop-status">准备开始</div>
+        <div class="loop-box agent" id="loop-agent">
+          <div class="loop-emoji">🤖</div>
+          <div class="loop-title">Agent 智能体</div>
+          <div class="loop-desc">基于当前状态做出动作决策</div>
+        </div>
+        <div class="loop-box env" id="loop-env">
+          <div class="loop-emoji">🌍</div>
+          <div class="loop-title">Environment 环境</div>
+          <div class="loop-desc">根据动作产生新状态和奖励</div>
+        </div>
+        <div class="loop-arrow top" id="loop-arrow-top">
+          <svg viewBox="0 0 220 48" preserveAspectRatio="none">
+            <defs>
+              <marker id="ar1" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#8b5cf6"/></marker>
+            </defs>
+            <line x1="0" y1="24" x2="210" y2="24" stroke="#8b5cf6" stroke-width="2.5" stroke-dasharray="6 4" marker-end="url(#ar1)"/>
+          </svg>
+          <span class="label">🎬 动作 a<sub>t</sub></span>
+        </div>
+        <div class="loop-arrow bottom" id="loop-arrow-bottom">
+          <svg viewBox="0 0 220 48" preserveAspectRatio="none">
+            <defs>
+              <marker id="ar2" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#ec4899"/></marker>
+            </defs>
+            <line x1="210" y1="24" x2="0" y2="24" stroke="#ec4899" stroke-width="2.5" stroke-dasharray="6 4" marker-end="url(#ar2)"/>
+          </svg>
+          <span class="label">📍 新状态 s<sub>t+1</sub> + 🏆 奖励 r<sub>t</sub></span>
+        </div>
+      </div>
+      <div class="flex items-center gap-2 mt-4 flex-wrap justify-center">
+        <button id="loop-step-btn" class="btn-primary">▶ 单步</button>
+        <button id="loop-auto-btn" class="btn-primary">⏩ 自动循环</button>
+        <button id="loop-reset-btn" class="btn-secondary">↻ 重置</button>
+        <span class="text-xs text-gray-500 ml-2">步数：<b id="loop-step-count" class="text-brand-600">0</b></span>
+      </div>
+    </section>
+
+    <!-- ② 六要素 -->
+    <section class="panel mb-6">
+      <h3>🧩 RL 的六大要素</h3>
+      <p class="text-sm text-gray-500 mb-4">理解了这六个概念，就理解了 RL 的语言。每个概念都配了一个生活化类比帮你记住。</p>
+      <div id="concepts-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+    </section>
+
+    <!-- ③ 三种学习范式对比 -->
+    <section class="panel mb-6">
+      <h3>🆚 RL vs 监督学习 vs 无监督学习</h3>
+      <p class="text-sm text-gray-500 mb-4">它们都是机器学习，但解决的问题和使用的信号完全不同。</p>
+      <div class="overflow-x-auto">
+        <table class="compare-table">
+          <thead>
+            <tr>
+              <th>维度</th>
+              <th>监督学习</th>
+              <th class="!bg-pink-50" style="color:#be185d">🎯 强化学习</th>
+              <th>无监督学习</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><b>输入信号</b></td>
+              <td>输入 + <b>标签</b>（正确答案）</td>
+              <td class="highlight">状态 + <b>奖励</b>（延迟、稀疏）</td>
+              <td>只有输入，<b>无标签</b></td>
+            </tr>
+            <tr>
+              <td><b>学习目标</b></td>
+              <td>让预测尽量贴近标签</td>
+              <td class="highlight">最大化<b>长期累计奖励</b></td>
+              <td>发现数据内在结构</td>
+            </tr>
+            <tr>
+              <td><b>决策方式</b></td>
+              <td>一次性预测（无时间维度）</td>
+              <td class="highlight"><b>序贯决策</b>（每一步影响未来）</td>
+              <td>不做决策</td>
+            </tr>
+            <tr>
+              <td><b>反馈时机</b></td>
+              <td>每个样本立刻有答案</td>
+              <td class="highlight"><b>延迟奖励</b>（可能走很多步才知好坏）</td>
+              <td>无反馈</td>
+            </tr>
+            <tr>
+              <td><b>探索 vs 利用</b></td>
+              <td>不涉及</td>
+              <td class="highlight"><b>核心矛盾</b>：要不要放弃已知最优去试新的？</td>
+              <td>不涉及</td>
+            </tr>
+            <tr>
+              <td><b>典型任务</b></td>
+              <td>图像分类、翻译</td>
+              <td class="highlight">下棋、机器人控制、大模型对齐</td>
+              <td>聚类、降维</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ④ 应用案例 -->
+    <section class="panel mb-6">
+      <h3>🌟 RL 能解决什么问题？</h3>
+      <p class="text-sm text-gray-500 mb-4">从棋盘到大模型，RL 的应用场景一直在扩展。</p>
+      <div id="cases-grid" class="grid grid-cols-2 md:grid-cols-4 gap-3"></div>
+    </section>
+
+    <!-- ⑤ 本站学习路径 -->
+    <section class="panel mb-6">
+      <h3>🗺️ 本站学习路径</h3>
+      <p class="text-sm text-gray-500 mb-4">按下面的 5 篇顺序学习，你会走过完整的 RL 知识图谱。每一篇都承前启后。</p>
+      <div id="roadmap" class="grid grid-cols-1 md:grid-cols-5 gap-3"></div>
+    </section>
+
+    <!-- 下一步引导 -->
+    <section class="panel text-center" style="background:linear-gradient(135deg,#fef3c7,#fce7f3);">
+      <div class="text-5xl mb-2">🎰</div>
+      <h3 class="text-xl font-black text-gray-800">准备好了吗？让我们从最简单的"多臂老虎机"开始 →</h3>
+      <p class="text-sm text-gray-600 mt-2 mb-4">只需要会基本加减法，就能动手体会"探索 vs 利用"的取舍。</p>
+      <a href="bandit.html" class="inline-block px-6 py-3 rounded-full bg-brand-600 hover:bg-brand-700 text-white font-bold shadow-lg transition">下一章 · 多臂老虎机 ▶</a>
+    </section>
+  </div>
+
+  <script type="module" src="../js/pages/intro.js"></script>
+</body>
+</html>

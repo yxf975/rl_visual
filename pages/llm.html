@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>✨ LLM 大模型 RL · RL 可视化学园</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+  <link rel="stylesheet" href="../css/global.css" />
+  <script>tailwind.config={theme:{extend:{colors:{brand:{500:'#8b5cf6',600:'#7c3aed',100:'#ede9fe'}}}}}</script>
+  <style>
+    .sub-tab { padding: 0.6rem 1rem; border-radius: 9999px; font-weight: 600; cursor: pointer; transition: all 0.2s; font-size: 0.9rem; }
+    .sub-tab.active { background: linear-gradient(135deg,#ec4899,#8b5cf6); color: white; box-shadow: 0 6px 18px rgba(139,92,246,0.35); }
+    .sub-tab:not(.active) { background: #fff; color: #6b7280; border: 1px solid #e5e7eb; }
+    .sub-tab:not(.active):hover { background: #f5f3ff; }
+    .stage-card { background: white; border-radius: 1.25rem; padding: 1.5rem; border: 2px solid #ede9fe; }
+    .stage-pill-big { padding: 0.5rem 1rem; border-radius: 9999px; font-weight: 700; display: inline-flex; align-items: center; gap: 0.5rem; }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-brand-50 via-white to-pink-50 min-h-screen">
+  <div class="page-container">
+    <h1 class="page-title">✨ LLM 大模型中的强化学习</h1>
+    <p class="page-desc">从 RLHF 到 DPO 到 GRPO —— 让大模型学会"说人话"的前沿对齐算法</p>
+
+    <!-- 子模块 Tab -->
+    <div class="flex flex-wrap gap-2 mb-6">
+      <button data-tab="rlhf" class="sub-tab active">🎯 RLHF 三阶段</button>
+      <button data-tab="ppo-llm" class="sub-tab">🔧 PPO in LLM</button>
+      <button data-tab="dpo" class="sub-tab">🎁 DPO</button>
+      <button data-tab="grpo" class="sub-tab">👥 GRPO</button>
+      <button data-tab="compare" class="sub-tab">📊 四法对比</button>
+    </div>
+
+    <!-- RLHF 三阶段 -->
+    <div id="pane-rlhf" class="pane">
+      <div class="grid md:grid-cols-3 gap-5 mb-6">
+        <div class="stage-card text-center">
+          <div class="stage-pill-big bg-green-100 text-green-800 mb-3">阶段 1 · SFT</div>
+          <div class="text-5xl mb-3">📚</div>
+          <h4 class="font-bold mb-2">监督微调</h4>
+          <p class="text-xs text-gray-600 leading-relaxed">用高质量"指令-回答"数据微调基础模型。最大化 log P(y|x)。</p>
+          <div class="mt-3 bg-green-50 rounded p-2 text-xs">
+            <b>输入：</b>(prompt, 人类写的好回答)<br/>
+            <b>产物：</b>π_SFT
+          </div>
+        </div>
+        <div class="stage-card text-center">
+          <div class="stage-pill-big bg-yellow-100 text-yellow-800 mb-3">阶段 2 · RM</div>
+          <div class="text-5xl mb-3">⚖️</div>
+          <h4 class="font-bold mb-2">奖励模型训练</h4>
+          <p class="text-xs text-gray-600 leading-relaxed">给同一 prompt 的 (chosen, rejected) 对训练一个打分器。</p>
+          <div class="mt-3 bg-yellow-50 rounded p-2 text-xs">
+            <b>损失：</b>-log σ(r(chosen) - r(rejected))<br/>
+            <b>产物：</b>Reward Model r(x,y)
+          </div>
+        </div>
+        <div class="stage-card text-center">
+          <div class="stage-pill-big bg-pink-100 text-pink-800 mb-3">阶段 3 · RL</div>
+          <div class="text-5xl mb-3">🎯</div>
+          <h4 class="font-bold mb-2">PPO 微调</h4>
+          <p class="text-xs text-gray-600 leading-relaxed">用 RM 给回答打分，PPO 优化策略，加 KL 惩罚防偏移。</p>
+          <div class="mt-3 bg-pink-50 rounded p-2 text-xs">
+            <b>目标：</b>max 𝔼[r(x,y)] - β·KL(π ‖ π_SFT)<br/>
+            <b>产物：</b>对齐后的 π
+          </div>
+        </div>
+      </div>
+      <div class="panel">
+        <h3>🎬 四模型协同流水线</h3>
+        <canvas id="rlhf-flow" width="900" height="260" style="width:100%;max-width:900px;background:#fff;border-radius:8px;display:block;margin:0 auto;"></canvas>
+        <div class="flex justify-center gap-3 mt-4">
+          <button id="rlhf-play" class="btn-primary">▶ 播放 RLHF 流程</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PPO in LLM -->
+    <div id="pane-ppo-llm" class="pane hidden">
+      <div class="panel mb-6">
+        <h3>💬 交互式演示</h3>
+        <div class="mb-3">
+          <label class="text-sm font-semibold">Prompt：</label>
+          <div class="bg-gray-100 rounded p-3 mt-1 text-sm font-mono">请用一句话介绍人工智能。</div>
+        </div>
+        <div class="grid md:grid-cols-3 gap-3">
+          <div class="panel" style="background:#fef2f2;">
+            <div class="text-xs font-bold text-red-600 mb-1">回答 A（低分）</div>
+            <p class="text-xs">AI 就是机器人大脑，有时候会乱说话也挺搞笑的。</p>
+            <div class="flex items-center gap-2 mt-2 text-xs">
+              <span>🎯 RM 分：</span><b class="text-red-500">2.1</b>
+              <span class="ml-2">📏 KL：</span><b class="text-gray-500">0.8</b>
+            </div>
+          </div>
+          <div class="panel" style="background:#fef3c7;">
+            <div class="text-xs font-bold text-yellow-700 mb-1">回答 B（中分）</div>
+            <p class="text-xs">人工智能是让机器模拟人类思维的技术。</p>
+            <div class="flex items-center gap-2 mt-2 text-xs">
+              <span>🎯 RM 分：</span><b class="text-yellow-600">5.3</b>
+              <span class="ml-2">📏 KL：</span><b class="text-gray-500">0.3</b>
+            </div>
+          </div>
+          <div class="panel" style="background:#dcfce7;">
+            <div class="text-xs font-bold text-green-700 mb-1">回答 C（高分）</div>
+            <p class="text-xs">人工智能（AI）是研究如何让机器具备学习、推理和决策等类人智能的科学技术。</p>
+            <div class="flex items-center gap-2 mt-2 text-xs">
+              <span>🎯 RM 分：</span><b class="text-green-600">8.7</b>
+              <span class="ml-2">📏 KL：</span><b class="text-gray-500">0.5</b>
+            </div>
+          </div>
+        </div>
+        <div class="mt-4 bg-brand-50 rounded p-3 text-sm">
+          <b>📐 最终奖励：</b>R = RM 分数 - β · KL(π ‖ π_SFT)<br/>
+          <span class="text-xs text-gray-600">KL 惩罚防止策略为了刷高分而变得离谱（如重复 "好的好的好的..."）</span>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>📈 训练曲线（模拟）</h3>
+        <div id="ppo-llm-chart" class="chart-box"></div>
+      </div>
+    </div>
+
+    <!-- DPO -->
+    <div id="pane-dpo" class="pane hidden">
+      <div class="panel mb-6">
+        <h3>🎁 DPO：跳过奖励模型直接优化</h3>
+        <div class="grid md:grid-cols-2 gap-5">
+          <div>
+            <h4 class="font-bold mb-2 text-red-500">❌ RLHF（3 阶段，复杂）</h4>
+            <ol class="text-sm space-y-1 list-decimal pl-5">
+              <li>SFT：人工写回答</li>
+              <li>训练 Reward Model</li>
+              <li>PPO 强化学习微调（不稳定）</li>
+            </ol>
+            <div class="mt-3 p-2 bg-red-50 rounded text-xs text-red-700">😫 RM 可能有误；PPO 超参难调；训练四个模型很贵</div>
+          </div>
+          <div>
+            <h4 class="font-bold mb-2 text-green-500">✅ DPO（1 阶段，简洁）</h4>
+            <ol class="text-sm space-y-1 list-decimal pl-5">
+              <li>直接用偏好数据优化策略！</li>
+              <li>不需要显式 RM，也不需要在线采样</li>
+              <li>本质上是个监督学习</li>
+            </ol>
+            <div class="mt-3 p-2 bg-green-50 rounded text-xs text-green-700">🎉 稳定、便宜、易实现。开源社区广受欢迎</div>
+          </div>
+        </div>
+        <div class="mt-5 bg-brand-50 rounded p-3 text-sm">
+          <b>🎯 DPO 损失：</b><br/>
+          <span class="font-mono text-xs block mt-1">L = -log σ( β·log(π(y_w|x)/π_ref(y_w|x)) - β·log(π(y_l|x)/π_ref(y_l|x)) )</span>
+          <p class="text-xs text-gray-600 mt-2">直觉：让 chosen 回答的概率比 rejected 回答更高（相对参考模型）</p>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>📊 偏好对数几率变化（动画）</h3>
+        <div id="dpo-chart" class="chart-box"></div>
+      </div>
+    </div>
+
+    <!-- GRPO -->
+    <div id="pane-grpo" class="pane hidden">
+      <div class="panel mb-6">
+        <h3>👥 GRPO（DeepSeek 提出）</h3>
+        <p class="text-sm leading-relaxed mb-3">PPO 需要额外的 Critic 网络估计 V(s)，训练大语言模型时这个代价极高。GRPO 的想法是：<b>对同一个 prompt 生成一组 (Group) 回答，用组内奖励的归一化作为优势。</b></p>
+
+        <div class="grid md:grid-cols-2 gap-5 mt-4">
+          <div>
+            <h4 class="font-bold mb-2 text-gray-700">❌ PPO 架构</h4>
+            <div class="flex flex-wrap gap-2">
+              <span class="px-3 py-1 rounded bg-pink-100 text-pink-700 text-xs font-bold">策略 π</span>
+              <span class="px-3 py-1 rounded bg-blue-100 text-blue-700 text-xs font-bold">价值 V(Critic)</span>
+              <span class="px-3 py-1 rounded bg-yellow-100 text-yellow-700 text-xs font-bold">参考 π_ref</span>
+              <span class="px-3 py-1 rounded bg-green-100 text-green-700 text-xs font-bold">奖励 RM</span>
+            </div>
+            <p class="text-xs text-gray-500 mt-2">需要训练 4 个网络！</p>
+          </div>
+          <div>
+            <h4 class="font-bold mb-2 text-green-600">✅ GRPO 架构</h4>
+            <div class="flex flex-wrap gap-2">
+              <span class="px-3 py-1 rounded bg-pink-100 text-pink-700 text-xs font-bold">策略 π</span>
+              <span class="px-3 py-1 rounded bg-yellow-100 text-yellow-700 text-xs font-bold">参考 π_ref</span>
+              <span class="px-3 py-1 rounded bg-green-100 text-green-700 text-xs font-bold">奖励 RM</span>
+            </div>
+            <p class="text-xs text-gray-500 mt-2">去掉了 Critic！</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>🎲 组内归一化优势示例</h3>
+        <div id="grpo-demo"></div>
+        <button id="grpo-gen" class="btn-primary mt-4">🎲 生成一组回答</button>
+      </div>
+    </div>
+
+    <!-- 四法对比 -->
+    <div id="pane-compare" class="pane hidden">
+      <div class="panel mb-6">
+        <h3>📊 综合对比雷达图</h3>
+        <div id="radar-chart" style="width:100%;height:420px"></div>
+      </div>
+      <div class="panel">
+        <h3>📋 维度对比表</h3>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead class="bg-brand-100">
+              <tr>
+                <th class="p-2 text-left">维度</th>
+                <th class="p-2">RLHF-PPO</th>
+                <th class="p-2">DPO</th>
+                <th class="p-2">GRPO</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y">
+              <tr><td class="p-2 font-bold">训练稳定性</td><td class="p-2 text-center">🟡 中</td><td class="p-2 text-center">🟢 高</td><td class="p-2 text-center">🟢 高</td></tr>
+              <tr><td class="p-2 font-bold">计算成本</td><td class="p-2 text-center">🔴 高（4 模型）</td><td class="p-2 text-center">🟢 低（2 模型）</td><td class="p-2 text-center">🟡 中（3 模型）</td></tr>
+              <tr><td class="p-2 font-bold">是否需要 Critic</td><td class="p-2 text-center">✅ 需要</td><td class="p-2 text-center">❌ 不需要</td><td class="p-2 text-center">❌ 不需要</td></tr>
+              <tr><td class="p-2 font-bold">是否需要 RM</td><td class="p-2 text-center">✅ 需要</td><td class="p-2 text-center">❌ 不需要</td><td class="p-2 text-center">✅ 需要</td></tr>
+              <tr><td class="p-2 font-bold">数据需求</td><td class="p-2 text-center">偏好对+在线采样</td><td class="p-2 text-center">仅偏好对</td><td class="p-2 text-center">仅 prompt（RM 评分）</td></tr>
+              <tr><td class="p-2 font-bold">代表工作</td><td class="p-2 text-center">ChatGPT, Claude</td><td class="p-2 text-center">Zephyr, Llama3-Instruct</td><td class="p-2 text-center">DeepSeek-R1, DeepSeek-Math</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="../js/pages/llm.js"></script>
+</body>
+</html>

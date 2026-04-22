@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>🎬 Actor-Critic · RL 可视化学园</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+  <link rel="stylesheet" href="../css/global.css" />
+  <script>tailwind.config={theme:{extend:{colors:{brand:{500:'#8b5cf6',600:'#7c3aed',100:'#ede9fe'}}}}}</script>
+</head>
+<body class="bg-gradient-to-br from-brand-50 via-white to-pink-50 min-h-screen">
+  <div class="page-container">
+    <h1 class="page-title">🎬 Actor-Critic</h1>
+    <p class="page-desc">演员（策略网络）+ 评论家（价值网络）协同学习，用 TD 误差替代完整回报</p>
+
+    <div class="panel mb-6">
+      <h3>🏗️ 双网络架构</h3>
+      <div class="grid grid-cols-1 md:grid-cols-5 gap-3 items-center text-center">
+        <div class="panel" style="background:#fce7f3;border-color:#f9a8d4;">
+          <div class="text-5xl mb-2">🎭</div>
+          <div class="font-bold">Actor 演员</div>
+          <div class="text-xs text-gray-600 mt-1">π(a|s;θ)<br/>策略网络</div>
+        </div>
+        <div class="text-4xl font-black text-brand-500">⇄</div>
+        <div class="panel" style="background:#fef3c7;border-color:#fbbf24;">
+          <div class="font-bold text-xl mb-2">⚡ TD 误差</div>
+          <div class="text-xs mt-1">δ = r + γV(s') − V(s)</div>
+          <div class="text-xs text-gray-500 mt-2">同时指导两者更新</div>
+        </div>
+        <div class="text-4xl font-black text-brand-500">⇄</div>
+        <div class="panel" style="background:#dbeafe;border-color:#60a5fa;">
+          <div class="text-5xl mb-2">🎬</div>
+          <div class="font-bold">Critic 评论家</div>
+          <div class="text-xs text-gray-600 mt-1">V(s;w)<br/>价值网络</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel mb-6">
+      <div class="flex items-center flex-wrap gap-4">
+        <button id="train-btn" class="btn-primary">▶ 训练</button>
+        <button id="reset-btn" class="btn-secondary">↻ 重置</button>
+        <label class="text-sm">Actor LR: <span id="lra-val" class="text-brand-600 font-bold">0.01</span></label>
+        <input type="range" id="lra" min="0.001" max="0.05" step="0.001" value="0.01" />
+        <label class="text-sm">Critic LR: <span id="lrc-val" class="text-brand-600 font-bold">0.05</span></label>
+        <input type="range" id="lrc" min="0.01" max="0.2" step="0.01" value="0.05" />
+      </div>
+    </div>
+
+    <div class="grid md:grid-cols-2 gap-5 mb-6">
+      <div class="panel">
+        <h3>🎮 CartPole 实时运行</h3>
+        <div id="cart-stage" class="relative bg-gradient-to-b from-sky-50 to-gray-100 rounded-lg overflow-hidden" style="height:200px">
+          <div class="absolute bottom-0 left-0 right-0 h-3 bg-gradient-to-r from-amber-200 to-amber-400"></div>
+        </div>
+        <div class="text-xs text-gray-500 mt-2 grid grid-cols-3 gap-2">
+          <div>回合: <b id="ep" class="text-brand-600">0</b></div>
+          <div>存活: <b id="alive" class="text-green-600">0</b></div>
+          <div>V(s): <b id="vval" class="text-pink-500">0.00</b></div>
+        </div>
+      </div>
+      <div class="panel">
+        <h3>📊 TD 误差 δ 曲线</h3>
+        <div id="td-chart" class="chart-box"></div>
+      </div>
+    </div>
+
+    <div class="grid md:grid-cols-2 gap-5 mb-6">
+      <div class="panel">
+        <h3>📈 奖励曲线（AC vs REINFORCE）</h3>
+        <div id="reward-chart" class="chart-box"></div>
+      </div>
+      <div class="panel">
+        <h3>🎭 策略概率分布</h3>
+        <div id="policy-chart" class="chart-box"></div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="../js/pages/ac.js"></script>
+</body>
+</html>

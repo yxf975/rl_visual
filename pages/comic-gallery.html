@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>🖼️ 漫画配图风格校验页 · RL 可视化学园</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="../css/global.css" />
+  <script>tailwind.config={theme:{extend:{colors:{brand:{500:'#8b5cf6',600:'#7c3aed',100:'#ede9fe'}}}}}</script>
+  <style>
+    .gallery-card {
+      background: white; border-radius: 0.9rem; padding: 0.75rem;
+      border: 1px solid #ede9fe; box-shadow: 0 4px 12px rgba(124,58,237,0.06);
+      display: flex; flex-direction: column;
+    }
+    .gallery-img-box {
+      width: 100%; aspect-ratio: 1 / 1; border-radius: 0.6rem;
+      background: #f5f3ff; display: flex; align-items: center; justify-content: center;
+      border: 1px dashed #c4b5fd; overflow: hidden; font-size: 2.6rem; color: #9ca3af;
+    }
+    .gallery-img-box img { width: 100%; height: 100%; object-fit: contain; }
+    .gallery-key { font-size: 0.72rem; color: #6b7280; margin-top: 0.5rem; font-family: monospace; word-break: break-all; }
+    .gallery-title { font-size: 0.85rem; font-weight: 700; color: #1f2937; margin-top: 0.2rem; }
+    .gallery-group { background: #faf5ff; border: 1px solid #ede9fe; border-radius: 1rem; padding: 1rem; }
+    .gallery-group-title {
+      font-size: 1rem; font-weight: 800; color: #6d28d9;
+      margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;
+    }
+    .status-todo { background: #fee2e2; color: #b91c1c; }
+    .status-ok { background: #d1fae5; color: #065f46; }
+    .status-badge { font-size: 0.65rem; font-weight: 700; padding: 0.1rem 0.45rem; border-radius: 9999px; }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-brand-50 via-white to-pink-50 min-h-screen">
+  <div class="page-container">
+    <h1 class="page-title">🖼️ 漫画配图风格校验页</h1>
+    <p class="page-desc">平铺展示所有 AI 生成的漫画插画，按分类快速巡检风格一致性与色彩合规性。</p>
+
+    <div class="bg-gradient-to-r from-brand-100 to-pink-100 border-l-4 border-brand-500 rounded-lg p-4 mb-6 text-sm leading-relaxed">
+      <b>🎨 风格规范：</b>扁平卡通 + 莫兰迪低饱和配色 · 圆润角色造型 · 奶油/雾霾灰背景<br/>
+      <b>❌ 禁用：</b>霓虹、荧光、纯红/蓝/黄、灰扑扑/泥土色、写实摄影、赛博朋克<br/>
+      <b>💡 提示：</b>绿色"OK"徽标表示已生成；红色"TODO"表示待生成。
+    </div>
+
+    <div id="gallery-root" class="space-y-5"></div>
+
+    <div class="panel mt-6 text-sm">
+      <h3>🔁 发现不合格图片怎么办？</h3>
+      <ol class="list-decimal pl-5 space-y-1 text-gray-700">
+        <li>基于锚点图 <code>IMG.anchor</code> 作为垫图重新生成；</li>
+        <li>Prompt 必须带固定风格前缀 + 负向词（见 <code>assets/comic/README.md</code>）；</li>
+        <li>禁止引入冲突风格词（写实 / 赛博朋克 / 霓虹 / 高饱和）；</li>
+        <li>生成后直接在 <code>js/img-assets.js</code> 中更新对应 URL，无需改动其它代码。</li>
+      </ol>
+    </div>
+  </div>
+
+  <script type="module">
+    import { renderNav, renderFooter } from '../js/page-common.js';
+    import { IMG } from '../js/img-assets.js';
+    renderNav();
+
+    // 图片清单（与 js/img-assets.js 同步）
+    // 若 imgKey 在 IMG 对象中存在，则展示生成好的图片；否则展示 TODO 占位
+    const GROUPS = [
+      {
+        title: '🎯 风格锚点（所有系列图的参考垫图）',
+        items: [
+          { imgKey: 'anchor', title: '风格锚点 · 萌系机器人' },
+        ],
+      },
+      {
+        title: '😊 通用角色表情包（P0 · 替换情绪性 emoji）',
+        items: [
+          { imgKey: 'happy',     title: '开心微笑' },
+          { imgKey: 'thinking',  title: '托腮思考' },
+          { imgKey: 'surprised', title: '吃惊瞪眼' },
+          { imgKey: 'cheer',     title: '举手庆祝' },
+          { imgKey: 'confused',  title: '疑惑歪头' },
+          { imgKey: 'fighting',  title: '握拳加油' },
+          { imgKey: 'sad',       title: '沮丧低头' },
+          { imgKey: 'idea',      title: '头顶灯泡' },
+        ],
+      },
+      {
+        title: '🎰 多臂老虎机系列',
+        items: [
+          { imgKey: 'banditCasino', title: '赌场 / 多台老虎机' },
+          { imgKey: 'banditReward', title: '金币掉落（TODO）' },
+        ],
+      },
+      {
+        title: '🗺️ MDP 系列',
+        items: [
+          { imgKey: 'mdpMaze',    title: '网格迷宫俯视图' },
+          { imgKey: 'mdpTreasure', title: '宝藏 vs 陷阱（TODO）' },
+        ],
+      },
+      {
+        title: '📐 动态规划系列',
+        items: [
+          { imgKey: 'dpHeatmap',  title: '价值函数热力图（TODO）' },
+          { imgKey: 'dpPolicy',   title: '策略箭头网格（TODO）' },
+        ],
+      },
+      {
+        title: '🧗 SARSA / Q-Learning 系列',
+        items: [
+          { imgKey: 'tdCliff',     title: '悬崖地形（TODO）' },
+          { imgKey: 'tdTwoRobots', title: '保守 vs 激进对比（TODO）' },
+        ],
+      },
+      {
+        title: '🧠 DQN 系列',
+        items: [
+          { imgKey: 'dqnReplay', title: '经验回放池（TODO）' },
+          { imgKey: 'dqnTwins',  title: '双胞胎网络（TODO）' },
+        ],
+      },
+      {
+        title: '🎭 策略优化系列',
+        items: [
+          { imgKey: 'acStage',     title: '演员登台 + 评论家打分（TODO）' },
+          { imgKey: 'trpoSafeZone', title: '信赖域安全圈（TODO）' },
+          { imgKey: 'ppoClip',     title: '裁剪剪刀（TODO）' },
+        ],
+      },
+      {
+        title: '🤖 DDPG 系列',
+        items: [
+          { imgKey: 'ddpgRobotArm', title: '机械臂（TODO）' },
+          { imgKey: 'ddpgTarget',   title: '追踪目标点（TODO）' },
+        ],
+      },
+      {
+        title: '✨ LLM RL 系列',
+        items: [
+          { imgKey: 'llmAlignment', title: 'AI 助手 + 人类导师（TODO）' },
+          { imgKey: 'llmPipeline',  title: '三阶段流水线（TODO）' },
+          { imgKey: 'llmBalance',   title: '偏好对比天平（TODO）' },
+        ],
+      },
+    ];
+
+    const root = document.getElementById('gallery-root');
+    root.innerHTML = GROUPS.map(g => {
+      const okCount = g.items.filter(it => IMG[it.imgKey]).length;
+      const total = g.items.length;
+      const allOk = okCount === total;
+      return `
+        <section class="gallery-group">
+          <div class="gallery-group-title">
+            <span>${g.title}</span>
+            <span class="status-badge ${allOk ? 'status-ok' : 'status-todo'}">
+              ${allOk ? `OK ${okCount}/${total}` : `${okCount}/${total}`}
+            </span>
+          </div>
+          <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+            ${g.items.map(it => {
+              const asset = IMG[it.imgKey];
+              const imgHtml = asset
+                ? `<img src="${asset.src}" alt="${asset.alt || it.title}" loading="lazy"
+                        onerror="this.style.display='none';this.parentElement.textContent='${asset.fallback || '🖼️'}';"/>`
+                : `<span style="font-size:2rem;">${getFallbackEmoji(it.imgKey)}</span>`;
+              return `
+                <div class="gallery-card">
+                  <div class="gallery-img-box">${imgHtml}</div>
+                  <div class="gallery-title">${it.title}</div>
+                  <div class="gallery-key">IMG.${it.imgKey}</div>
+                  <div class="mt-1">
+                    <span class="status-badge ${asset ? 'status-ok' : 'status-todo'}">
+                      ${asset ? '✓ 已生成' : '待生成'}
+                    </span>
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </section>
+      `;
+    }).join('');
+
+    function getFallbackEmoji(key) {
+      const map = {
+        banditReward: '💰', mdpTreasure: '💎',
+        dpHeatmap: '🌡️', dpPolicy: '🧭',
+        tdCliff: '⛰️', tdTwoRobots: '👥',
+        dqnReplay: '📚', dqnTwins: '👯',
+        acStage: '🎬', trpoSafeZone: '🛡️', ppoClip: '✂️',
+        ddpgRobotArm: '🦾', ddpgTarget: '🎯',
+        llmAlignment: '🤝', llmPipeline: '🔄', llmBalance: '⚖️',
+      };
+      return map[key] || '🖼️';
+    }
+
+    renderFooter();
+  </script>
+</body>
+</html>

@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>🎨 算法漫画合集 · RL 可视化学园</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="../css/global.css" />
+  <script>tailwind.config={theme:{extend:{colors:{brand:{500:'#8b5cf6',600:'#7c3aed',100:'#ede9fe'}}}}}</script>
+  <style>
+    .comic-cover {
+      background: white; border-radius: 1.5rem; padding: 1.5rem;
+      border: 3px solid #1f2937; cursor: pointer;
+      transition: all 0.3s; position: relative; overflow: hidden;
+      box-shadow: 6px 6px 0 rgba(139,92,246,0.3);
+    }
+    .comic-cover:hover { transform: translate(-3px, -3px); box-shadow: 9px 9px 0 rgba(236,72,153,0.5); }
+    .comic-cover::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, transparent 70%, rgba(236,72,153,0.1)); }
+    .comic-big-emoji { font-size: 5rem; display: block; text-align: center; margin-bottom: 0.5rem; filter: drop-shadow(2px 4px 0 rgba(0,0,0,0.1)); }
+    .level-filter { padding: 0.4rem 0.9rem; border-radius: 9999px; font-weight: 600; font-size: 0.85rem; cursor: pointer; border: 2px solid transparent; }
+    .level-filter.active { background: linear-gradient(135deg,#ec4899,#8b5cf6); color: white; }
+    .level-filter:not(.active) { background: #fff; color: #6b7280; border-color: #e5e7eb; }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-brand-50 via-white to-pink-50 min-h-screen">
+  <div class="page-container">
+    <h1 class="page-title">🎨 算法漫画合集</h1>
+    <p class="page-desc">每个算法都配套一部专属漫画，让抽象公式变成生动故事</p>
+
+    <div class="flex gap-2 mb-6 flex-wrap">
+      <button class="level-filter active" data-level="all">🌈 全部</button>
+      <button class="level-filter" data-level="入门">🌱 入门</button>
+      <button class="level-filter" data-level="进阶">🚀 进阶</button>
+      <button class="level-filter" data-level="前沿">✨ 前沿</button>
+    </div>
+
+    <div id="covers" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+  </div>
+
+  <script type="module">
+    import { renderNav, renderFooter } from '../js/page-common.js';
+    import { ALGORITHMS } from '../js/algorithms.js';
+    import { COMICS } from '../js/comics-data.js';
+    import { launchComic } from '../js/comic-engine.js';
+
+    renderNav();
+
+    // 映射：algorithm id -> comic key
+    const comicKeyMap = {
+      bandit: 'bandit', mdp: 'mdp', dp: 'dp', td: 'td',
+      dqn: 'dqn', reinforce: 'reinforce', ac: 'ac',
+      trpo: 'trpo', ppo: 'ppo', ddpg: 'ddpg', llm: 'llm',
+    };
+
+    const COVERS_COLORS = [
+      'linear-gradient(135deg,#fde68a,#fca5a5)',
+      'linear-gradient(135deg,#dbeafe,#e0e7ff)',
+      'linear-gradient(135deg,#e9d5ff,#fce7f3)',
+      'linear-gradient(135deg,#fecaca,#fed7aa)',
+      'linear-gradient(135deg,#c7d2fe,#ddd6fe)',
+      'linear-gradient(135deg,#fbcfe8,#fde68a)',
+      'linear-gradient(135deg,#ddd6fe,#fbcfe8)',
+      'linear-gradient(135deg,#fed7aa,#fecaca)',
+      'linear-gradient(135deg,#fde68a,#fca5a5)',
+      'linear-gradient(135deg,#c7d2fe,#ddd6fe)',
+      'linear-gradient(135deg,#fed7aa,#fecaca)',
+    ];
+
+    const coversBox = document.getElementById('covers');
+    let currentLevel = 'all';
+
+    function render() {
+      const list = ALGORITHMS.filter(a => currentLevel === 'all' || a.level === currentLevel);
+      coversBox.innerHTML = list.map((a, i) => {
+        const comic = COMICS[comicKeyMap[a.id]];
+        const frameCount = comic ? comic.frames.length : 0;
+        const hasComic = !!comic;
+        return `
+          <div class="comic-cover" data-id="${a.id}" style="background: ${COVERS_COLORS[i % COVERS_COLORS.length]};">
+            <div class="flex items-center justify-between mb-2">
+              <span class="badge-${a.level}" style="font-size:0.7rem;padding:0.15rem 0.6rem;">${a.level}</span>
+              <span class="text-xs font-bold text-gray-600">${hasComic ? `📖 ${frameCount} 格` : '📘 总论页'}</span>
+            </div>
+            <span class="comic-big-emoji">${a.icon}</span>
+            <div class="text-center mb-3">
+              <div class="font-black text-lg text-gray-800" style="font-family:'Comic Sans MS',sans-serif;">${comic ? comic.title : a.name}</div>
+              <div class="text-xs text-gray-600 mt-1">${a.desc}</div>
+            </div>
+            <div class="flex gap-2 mt-3">
+              ${hasComic
+                ? `<button class="flex-1 px-3 py-1.5 rounded-full bg-gray-900 text-white text-xs font-bold launch-btn">🎨 看漫画</button>`
+                : `<span class="flex-1 px-3 py-1.5 rounded-full bg-gray-200 text-gray-500 text-xs font-bold text-center">暂无漫画</span>`}
+              <a href="${a.page.replace(/^pages\//, '')}" class="flex-1 px-3 py-1.5 rounded-full bg-white text-gray-800 text-xs font-bold text-center border border-gray-300">🎮 动手玩</a>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      // 绑定
+      coversBox.querySelectorAll('.comic-cover').forEach(card => {
+        const btn = card.querySelector('.launch-btn');
+        if (!btn) return;
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const id = card.dataset.id;
+          const comic = COMICS[comicKeyMap[id]];
+          if (comic) launchComic(comic);
+        });
+      });
+    }
+
+    document.querySelectorAll('.level-filter').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.level-filter').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentLevel = btn.dataset.level;
+        render();
+      });
+    });
+
+    render();
+    renderFooter();
+  </script>
+</body>
+</html>

@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>🛡️ TRPO · RL 可视化学园</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="../css/global.css" />
+  <script>tailwind.config={theme:{extend:{colors:{brand:{500:'#8b5cf6',600:'#7c3aed',100:'#ede9fe'}}}}}</script>
+</head>
+<body class="bg-gradient-to-br from-brand-50 via-white to-pink-50 min-h-screen">
+  <div class="page-container">
+    <h1 class="page-title">🛡️ TRPO · 信赖域策略优化</h1>
+    <p class="page-desc">在"旧策略"附近画一个 KL 安全圈，保证每一步更新都稳定提升</p>
+
+    <div class="bg-gradient-to-r from-brand-100 to-pink-100 border-l-4 border-brand-500 rounded-lg p-4 mb-6 text-sm">
+      <b>核心思想：</b>策略梯度的步长如果太大，策略可能崩溃。TRPO 强制要求新旧策略的 KL 散度 ≤ δ，类似在旧策略周围画一个"安全半径"的圆圈。
+    </div>
+
+    <div class="grid md:grid-cols-3 gap-5 mb-6">
+      <div class="panel md:col-span-2">
+        <h3>🎯 策略参数空间（2D 投影）</h3>
+        <canvas id="trpo-canvas" width="600" height="420" style="width:100%;max-width:600px;border-radius:8px;background:#fff;display:block;margin:0 auto;"></canvas>
+        <p class="text-xs text-gray-500 mt-2 text-center">背景等高线 = 目标函数（中心越亮越优）；<b class="text-brand-600">紫色圆圈 = KL 信赖域</b>；🟠 旧策略；🟢 新策略（在圈内找最优）</p>
+      </div>
+      <div class="panel">
+        <h3>🎚️ 信赖域参数</h3>
+        <label class="block text-sm font-semibold mb-1 mt-3">KL 约束 δ: <span id="delta-val" class="text-brand-600 font-bold">0.05</span></label>
+        <input type="range" id="delta" min="0.005" max="0.3" step="0.005" value="0.05" class="w-full" />
+        <p class="text-xs text-gray-500 mt-1">δ 越大 → 步子越大 → 风险越高</p>
+
+        <div class="mt-5 grid grid-cols-2 gap-2">
+          <button id="step-btn" class="btn-primary col-span-2">▶ 单步更新</button>
+          <button id="auto-btn" class="btn-primary">⏩ 自动</button>
+          <button id="reset-btn" class="btn-secondary">↻ 重置</button>
+        </div>
+
+        <div class="mt-5 text-sm space-y-2">
+          <div>迭代次数：<b id="iter" class="text-brand-600">0</b></div>
+          <div>当前奖励：<b id="rw" class="text-pink-500">-</b></div>
+          <div>实际 KL：<b id="kl" class="text-green-600">-</b></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>📐 TRPO 数学表述</h3>
+      <div class="text-sm leading-relaxed bg-brand-50 p-4 rounded">
+        <p class="font-mono text-center mb-2">max<sub>θ</sub> 𝔼[ (π<sub>θ</sub>(a|s)/π<sub>θ_old</sub>(a|s)) · A(s,a) ]</p>
+        <p class="font-mono text-center">s.t. 𝔼[ KL(π<sub>θ_old</sub> ‖ π<sub>θ</sub>) ] ≤ δ</p>
+      </div>
+      <p class="text-sm mt-3 text-gray-600">实际求解用"共轭梯度法"近似自然梯度，避免直接求 Fisher 信息矩阵的逆。</p>
+    </div>
+  </div>
+  <script type="module" src="../js/pages/trpo.js"></script>
+</body>
+</html>

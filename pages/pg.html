@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>🎭 REINFORCE · RL 可视化学园</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+  <link rel="stylesheet" href="../css/global.css" />
+  <script>tailwind.config={theme:{extend:{colors:{brand:{500:'#8b5cf6',600:'#7c3aed',100:'#ede9fe'}}}}}</script>
+  <style>
+    .cart { position: absolute; bottom: 10px; width: 60px; height: 20px; background: #4b5563; border-radius: 4px; transition: left 0.05s linear; }
+    .pole { position: absolute; bottom: 30px; width: 6px; height: 80px; background: linear-gradient(to top, #d97706, #fbbf24); border-radius: 3px; transform-origin: bottom center; transition: transform 0.05s linear, left 0.05s linear; }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-brand-50 via-white to-pink-50 min-h-screen">
+  <div class="page-container">
+    <h1 class="page-title">🎭 REINFORCE · 策略梯度</h1>
+    <p class="page-desc">最朴素的策略梯度方法：采样一条完整轨迹，直接优化策略 π(a|s)</p>
+
+    <div class="panel mb-6">
+      <div class="flex items-center flex-wrap gap-4">
+        <button id="train-btn" class="btn-primary">▶ 训练 100 回合</button>
+        <button id="reset-btn" class="btn-secondary">↻ 重置</button>
+        <div class="flex items-center gap-2 ml-4">
+          <label class="text-sm font-semibold">加入 Baseline:</label>
+          <input type="checkbox" id="baseline" class="w-5 h-5 accent-brand-500" />
+        </div>
+        <div class="text-sm text-gray-500">（对比有无 baseline 的梯度方差）</div>
+      </div>
+    </div>
+
+    <div class="grid md:grid-cols-2 gap-5 mb-6">
+      <div class="panel">
+        <h3>🎮 CartPole 模拟</h3>
+        <div id="cart-stage" class="relative bg-gradient-to-b from-sky-50 to-gray-100 rounded-lg border border-gray-200 overflow-hidden" style="height:200px">
+          <!-- 动态注入 -->
+          <div class="absolute bottom-0 left-0 right-0 h-3 bg-gradient-to-r from-amber-200 to-amber-400"></div>
+        </div>
+        <div class="text-xs text-gray-500 mt-2 grid grid-cols-3 gap-2">
+          <div>回合: <b id="ep" class="text-brand-600">0</b></div>
+          <div>当前步数: <b id="stp" class="text-brand-600">0</b></div>
+          <div>存活时间: <b id="alive" class="text-green-600">0</b></div>
+        </div>
+      </div>
+      <div class="panel">
+        <h3>📊 动作概率分布（策略演化）</h3>
+        <div id="policy-chart" class="chart-box"></div>
+      </div>
+    </div>
+
+    <div class="grid md:grid-cols-2 gap-5 mb-6">
+      <div class="panel">
+        <h3>📈 每回合累计奖励</h3>
+        <div id="reward-chart" class="chart-box"></div>
+      </div>
+      <div class="panel">
+        <h3>📉 梯度方差对比</h3>
+        <div id="var-chart" class="chart-box"></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>📐 REINFORCE 算法核心</h3>
+      <div class="grid md:grid-cols-2 gap-4 text-sm">
+        <div>
+          <p class="leading-relaxed mb-2"><b class="text-brand-600">① 采样：</b>用当前策略 π(a|s;θ) 采样一条完整轨迹 τ = (s₀,a₀,r₀,...,s_T)</p>
+          <p class="leading-relaxed mb-2"><b class="text-brand-600">② 计算回报：</b>G_t = Σ_{k=t}^{T} γ^{k-t} r_k</p>
+          <p class="leading-relaxed"><b class="text-brand-600">③ 更新：</b>θ ← θ + α · Σ_t ∇log π(a_t|s_t;θ) · (G_t − b)</p>
+        </div>
+        <div class="bg-brand-50 rounded p-3 leading-relaxed">
+          <p><b>💡 Baseline 作用：</b>减去一个基线 b（通常是平均回报或 V(s)）不会改变梯度的期望值，但能 <b class="text-brand-600">大幅降低方差</b>，让训练更稳定。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="../js/pages/pg.js"></script>
+</body>
+</html>

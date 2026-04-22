@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>🎰 多臂老虎机 · RL 可视化学园</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+  <link rel="stylesheet" href="../css/global.css" />
+  <script>
+    tailwind.config = { theme: { extend: { colors: { brand: { 50:'#f5f3ff',100:'#ede9fe',200:'#ddd6fe',300:'#c4b5fd',400:'#a78bfa',500:'#8b5cf6',600:'#7c3aed',700:'#6d28d9' } } } } }
+  </script>
+</head>
+<body class="bg-gradient-to-br from-brand-50 via-white to-pink-50 min-h-screen">
+  <div class="page-container">
+    <h1 class="page-title">🎰 多臂老虎机</h1>
+    <p class="page-desc">探索（Exploration）与利用（Exploitation）的权衡 — 强化学习的起点。</p>
+
+    <!-- 核心概念提示条 -->
+    <div class="bg-gradient-to-r from-brand-100 to-pink-100 border-l-4 border-brand-500 rounded-lg p-4 mb-6">
+      <p class="text-sm leading-relaxed">
+        <b>🎯 场景：</b>你面前有 N 台老虎机，每台的中奖概率不同且未知。每次你只能拉一台，你希望在有限次数内获得最多奖励。
+      </p>
+    </div>
+
+    <!-- 控制面板 -->
+    <div class="panel mb-6">
+      <div class="grid md:grid-cols-4 gap-4">
+        <div>
+          <label class="block text-sm font-semibold mb-2">🎲 策略</label>
+          <div class="btn-group w-full flex">
+            <button data-strategy="eps" class="active flex-1">ε-贪心</button>
+            <button data-strategy="ucb" class="flex-1">UCB</button>
+            <button data-strategy="thompson" class="flex-1">Thompson</button>
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-semibold mb-2">🎚️ ε 值：<span id="eps-value" class="text-brand-600 font-bold">0.10</span></label>
+          <input type="range" id="eps-slider" min="0" max="1" step="0.01" value="0.1" class="w-full" />
+        </div>
+        <div>
+          <label class="block text-sm font-semibold mb-2">🔢 步数：<span id="steps-value" class="text-brand-600 font-bold">500</span></label>
+          <input type="range" id="steps-slider" min="50" max="2000" step="50" value="500" class="w-full" />
+        </div>
+        <div class="flex items-end gap-2">
+          <button id="start-btn" class="btn-primary flex-1">▶ 开始模拟</button>
+          <button id="reset-btn" class="btn-secondary">↻</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="scene-picker-slot"></div>
+
+    <!-- 老虎机可视化 -->
+    <div class="panel mb-6">
+      <h3>🎰 老虎机实况</h3>
+      <div id="bandits-container" class="grid grid-cols-5 gap-3 mb-4"></div>
+      <div class="flex items-center gap-4 text-sm flex-wrap">
+        <div><b>当前步：</b><span id="step-count" class="text-brand-600 font-bold">0</span> / <span id="step-total">500</span></div>
+        <div><b>累计奖励：</b><span id="total-reward" class="text-candy-pink font-bold" style="color:#ec4899">0.0</span></div>
+        <div><b>最新动作：</b><span id="last-action" class="font-bold">-</span></div>
+      </div>
+    </div>
+
+    <!-- 两个图表 -->
+    <div class="grid md:grid-cols-2 gap-5 mb-6">
+      <div class="panel">
+        <h3>📊 估计价值 vs 真实价值</h3>
+        <div id="value-chart" class="chart-box"></div>
+      </div>
+      <div class="panel">
+        <h3>📈 累计奖励曲线（多策略对比）</h3>
+        <div id="reward-chart" class="chart-box"></div>
+      </div>
+    </div>
+
+    <!-- 选择次数分布 -->
+    <div class="panel mb-6">
+      <h3>🥧 各台被选择次数</h3>
+      <div id="pull-chart" class="chart-box"></div>
+    </div>
+
+    <!-- 知识卡片 -->
+    <div class="grid md:grid-cols-3 gap-4">
+      <div class="panel">
+        <h3>🎲 ε-贪心</h3>
+        <p class="text-sm text-gray-600 leading-relaxed">概率 ε 随机探索，概率 1-ε 选当前最优。简单直接，ε 越大越爱探索。</p>
+      </div>
+      <div class="panel">
+        <h3>📈 UCB</h3>
+        <p class="text-sm text-gray-600 leading-relaxed">给试得少的选项加"不确定性奖励"：Q̂(a) + c·√(ln(t)/N(a))，强迫探索冷门。</p>
+      </div>
+      <div class="panel">
+        <h3>🎯 Thompson 采样</h3>
+        <p class="text-sm text-gray-600 leading-relaxed">为每个动作维护一个 Beta 分布，每步从中采样后取最大。贝叶斯优雅之作。</p>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="../js/pages/bandit.js"></script>
+</body>
+</html>

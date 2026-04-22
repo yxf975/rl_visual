@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>🗺️ MDP · RL 可视化学园</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="../css/global.css" />
+  <script>tailwind.config={theme:{extend:{colors:{brand:{500:'#8b5cf6',600:'#7c3aed',100:'#ede9fe'}}}}}</script>
+</head>
+<body class="bg-gradient-to-br from-brand-50 via-white to-pink-50 min-h-screen">
+  <div class="page-container">
+    <h1 class="page-title">🗺️ 马尔可夫决策过程（MDP）</h1>
+    <p class="page-desc">在网格世界中直观理解状态、动作、奖励与价值函数。</p>
+
+    <div class="bg-gradient-to-r from-brand-100 to-pink-100 border-l-4 border-brand-500 rounded-lg p-4 mb-6">
+      <p class="text-sm leading-relaxed">
+        <b>🎯 MDP 五元组：</b>&lt;状态 S, 动作 A, 转移 P, 奖励 R, 折扣 γ&gt;。机器人 🤖 从 🏁 出发，想尽快到 💎，躲开 💣。
+      </p>
+    </div>
+
+    <div class="grid md:grid-cols-3 gap-5 mb-6">
+      <div class="panel md:col-span-2">
+        <h3>🗺️ 网格世界（点击格子查看详情）</h3>
+        <div id="grid-container"></div>
+        <div class="flex gap-2 mt-4 flex-wrap">
+          <button id="play-btn" class="btn-primary">▶ 播放随机轨迹</button>
+          <button id="reset-btn" class="btn-secondary">↻ 重置</button>
+        </div>
+      </div>
+      <div class="panel">
+        <h3>🎚️ 参数</h3>
+        <label class="block text-sm font-semibold mb-1 mt-2">折扣因子 γ: <span id="gamma-val" class="text-brand-600 font-bold">0.90</span></label>
+        <input type="range" id="gamma" min="0" max="0.99" step="0.01" value="0.9" class="w-full" />
+        <label class="block text-sm font-semibold mb-1 mt-4">滑动概率（噪声）: <span id="slip-val" class="text-brand-600 font-bold">0.10</span></label>
+        <input type="range" id="slip" min="0" max="0.5" step="0.01" value="0.1" class="w-full" />
+        <p class="text-xs text-gray-500 mt-4 leading-relaxed">调节 γ 会实时重算 V(s) 热力图（使用简单的随机策略评估）。滑动概率越大，动作越不听话。</p>
+
+        <hr class="my-4"/>
+        <div id="cell-detail" class="text-sm">
+          <p class="text-gray-400 italic">点击任意格子查看详情...</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid md:grid-cols-3 gap-4">
+      <div class="panel">
+        <h3>📍 状态 S</h3>
+        <p class="text-sm text-gray-600">当前处于哪个格子就是状态。这里共 16 个状态。</p>
+      </div>
+      <div class="panel">
+        <h3>🎬 动作 A</h3>
+        <p class="text-sm text-gray-600">可选：↑ → ↓ ←。每步有滑动概率导致偏移。</p>
+      </div>
+      <div class="panel">
+        <h3>🏆 奖励 R</h3>
+        <p class="text-sm text-gray-600">到达 💎 +10，踩到 💣 -10，每步 -1（鼓励效率）。</p>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="../js/pages/mdp.js"></script>
+</body>
+</html>

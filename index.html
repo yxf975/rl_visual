@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RL 可视化学园 · 从零开始的强化学习</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="css/global.css" />
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f5f3ff', 100: '#ede9fe', 200: '#ddd6fe',
+              300: '#c4b5fd', 400: '#a78bfa', 500: '#8b5cf6',
+              600: '#7c3aed', 700: '#6d28d9', 800: '#5b21b6', 900: '#4c1d95'
+            },
+            candy: { pink: '#ff6b9d', yellow: '#ffd93d', mint: '#6bcB77', sky: '#4d96ff' }
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-gradient-to-br from-brand-50 via-white to-pink-50 min-h-screen text-gray-800">
+
+  <!-- 顶部导航 -->
+  <nav class="sticky top-0 z-40 backdrop-blur bg-white/80 border-b border-brand-100 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+      <a href="index.html" class="flex items-center gap-2 group">
+        <span class="text-3xl group-hover:rotate-12 transition-transform">🎮</span>
+        <span class="font-bold text-xl bg-gradient-to-r from-brand-600 to-pink-500 bg-clip-text text-transparent">RL 可视化学园</span>
+      </a>
+      <div class="hidden md:flex items-center gap-1 text-sm">
+        <a href="#chapters-root" class="px-3 py-1.5 rounded-lg hover:bg-brand-100 text-brand-700 font-medium">📚 全部章节</a>
+        <a href="#learning-path" class="px-3 py-1.5 rounded-lg hover:bg-brand-100">🧭 学习路径</a>
+        <a href="pages/comics.html" class="px-3 py-1.5 rounded-lg hover:bg-brand-100">🎨 漫画合集</a>
+        <a href="pages/bandit.html" class="px-3 py-1.5 rounded-lg hover:bg-brand-100">🎰 快速开始</a>
+      </div>
+      <a href="pages/comics.html" class="hidden md:inline-flex items-center gap-1 px-4 py-2 rounded-full bg-gradient-to-r from-pink-400 to-brand-500 text-white text-sm font-bold shadow hover:scale-105 transition">
+        🎨 漫画合集
+      </a>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <header class="max-w-7xl mx-auto px-4 pt-12 pb-4 text-center">
+    <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/80 border border-brand-200 text-brand-700 text-xs font-medium shadow-sm mb-4">
+      <span class="w-2 h-2 rounded-full animate-pulse" style="background:#6bcB77"></span>
+      零基础可读 · 漫画 + 交互动画 · 全部内容自包含
+    </div>
+    <h1 class="text-4xl md:text-6xl font-black leading-tight mb-4">
+      让<span class="bg-gradient-to-r from-brand-600 via-pink-500 to-candy-yellow bg-clip-text text-transparent">强化学习</span>
+      <br class="md:hidden"/>像读<span class="relative inline-block">
+        漫画
+        <span class="absolute -top-2 -right-6 text-3xl animate-bounce">📖</span>
+      </span>一样轻松
+    </h1>
+    <p class="max-w-3xl mx-auto text-gray-600 md:text-lg leading-relaxed">
+      这不是一个教科书目录。我们按照<b class="text-brand-600">五大篇章</b>把强化学习拆成循序渐进的故事，
+      每一章都配套<b class="text-pink-500">20 格以上的漫画</b>、<b class="text-brand-600">可交互动画</b>和<b class="text-pink-500">逐步讲解</b>。
+      即使你从未读过任何强化学习教材，也可以跟着走完全程。
+    </p>
+    <div class="flex flex-wrap items-center justify-center gap-3 mt-6">
+      <a href="pages/intro.html" class="px-6 py-3 rounded-full bg-brand-600 hover:bg-brand-700 text-white font-bold shadow-lg shadow-brand-200 transition">🚀 从零开始（初探 RL）</a>
+      <a href="#chapters-root" class="px-6 py-3 rounded-full bg-white border-2 border-brand-300 text-brand-700 font-bold hover:bg-brand-50 transition">📖 查看全部篇章</a>
+      <a href="pages/comics.html" class="px-6 py-3 rounded-full bg-gradient-to-r from-pink-500 to-brand-600 text-white font-bold shadow-lg transition">🎨 只看漫画</a>
+    </div>
+  </header>
+
+  <!-- 学习路径（按篇章） -->
+  <section id="learning-path-section" class="max-w-7xl mx-auto px-4 py-10">
+    <h2 class="text-2xl font-bold mb-1 flex items-center gap-2">🧭 五篇学习路径</h2>
+    <p class="text-gray-500 mb-6 text-sm">点击任意篇章可跳转到对应章节。推荐从第一篇开始顺序阅读，每两篇之间标注了过渡逻辑。</p>
+    <div id="learning-path" class="flex items-center gap-3 overflow-x-auto pb-4"></div>
+  </section>
+
+  <!-- 如何使用本站 -->
+  <section class="max-w-7xl mx-auto px-4 py-6">
+    <div class="bg-gradient-to-r from-brand-50 to-pink-50 rounded-2xl p-6 border-2 border-dashed border-brand-200">
+      <h3 class="font-bold text-lg mb-3">💡 如何使用本站</h3>
+      <div class="grid md:grid-cols-3 gap-4 text-sm">
+        <div>
+          <div class="font-bold text-brand-600 mb-1">① 看漫画建直觉</div>
+          <p class="text-gray-600">每章右上角有 🎨 漫画讲解 按钮，用 14-20 格连环画告诉你算法"为什么这样设计"。</p>
+        </div>
+        <div>
+          <div class="font-bold text-brand-600 mb-1">② 动手玩动画</div>
+          <p class="text-gray-600">所有关键算法都有可调参数+实时动画。每个动画都附带"读懂动画"说明面板。</p>
+        </div>
+        <div>
+          <div class="font-bold text-brand-600 mb-1">③ 看训练目标</div>
+          <p class="text-gray-600">页面顶部的"训练目标卡"会告诉你：这个环境在干嘛、什么叫做成功、应该观察哪些指标。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 章节层次化展示 -->
+  <section class="max-w-7xl mx-auto px-4 py-8">
+    <div class="flex items-end justify-between mb-6 flex-wrap gap-2">
+      <div>
+        <h2 class="text-2xl font-bold">📚 五大篇章</h2>
+        <p class="text-gray-500 text-sm mt-1">每篇承前启后，形成完整的强化学习知识图谱</p>
+      </div>
+      <div class="flex gap-2 text-xs">
+        <span class="badge-入门">入门</span>
+        <span class="badge-进阶">进阶</span>
+        <span class="badge-前沿">前沿</span>
+      </div>
+    </div>
+    <div id="chapters-root" class="space-y-10"></div>
+  </section>
+
+  <!-- 特色功能 -->
+  <section class="max-w-7xl mx-auto px-4 py-12">
+    <h2 class="text-2xl font-bold text-center mb-8">✨ 平台特色</h2>
+    <div class="grid md:grid-cols-3 gap-5">
+      <div class="feature-card">
+        <div class="text-4xl mb-3">🎨</div>
+        <h3 class="font-bold text-lg mb-2">漫画讲解模式</h3>
+        <p class="text-sm text-gray-600 leading-relaxed">每个算法配 14-20 格专属连环画，层层递进讲原理、公式和直觉。完全自包含，不需要先读原书。</p>
+      </div>
+      <div class="feature-card">
+        <div class="text-4xl mb-3">🎮</div>
+        <h3 class="font-bold text-lg mb-2">交互式动画 + 场景切换</h3>
+        <p class="text-sm text-gray-600 leading-relaxed">所有动画都有"训练目标卡"和"读懂动画"面板。多个算法支持切换不同可视化场景（如 CartPole / 寻宝 / 追踪）。</p>
+      </div>
+      <div class="feature-card">
+        <div class="text-4xl mb-3">📊</div>
+        <h3 class="font-bold text-lg mb-2">实时数据 + 慢动作</h3>
+        <p class="text-sm text-gray-600 leading-relaxed">训练曲线、Q 值热力图、策略分布同步绘制，动画速度放慢便于观察细节，每个元素都有注释说明。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 页脚 -->
+  <footer class="mt-16 border-t border-brand-100 bg-white/60 backdrop-blur">
+    <div class="max-w-7xl mx-auto px-4 py-8 text-center text-sm text-gray-500">
+      <p class="mb-2">自包含强化学习教学网站 · 零基础可读</p>
+      <p>由 <a href="https://with.woa.com/" style="color: #8A2BE2;" target="_blank">With</a> 通过自然语言生成</p>
+    </div>
+  </footer>
+
+  <script type="module" src="js/home.js"></script>
+</body>
+</html>

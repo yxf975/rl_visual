@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>🤖 DDPG · RL 可视化学园</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+  <link rel="stylesheet" href="../css/global.css" />
+  <script>tailwind.config={theme:{extend:{colors:{brand:{500:'#8b5cf6',600:'#7c3aed',100:'#ede9fe'}}}}}</script>
+</head>
+<body class="bg-gradient-to-br from-brand-50 via-white to-pink-50 min-h-screen">
+  <div class="page-container">
+    <h1 class="page-title">🤖 DDPG · 连续动作空间</h1>
+    <p class="page-desc">确定性策略梯度 = DQN 技巧（经验回放+目标网络）+ Actor-Critic 架构</p>
+
+    <div class="panel mb-6">
+      <h3>🏗️ 四网络架构</h3>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div class="panel text-center" style="background:#fce7f3;">
+          <div class="text-4xl">🎭</div>
+          <div class="font-bold mt-1">Actor μ(s)</div>
+          <div class="text-xs text-gray-500 mt-1">输出连续动作</div>
+        </div>
+        <div class="panel text-center" style="background:#fef3c7;">
+          <div class="text-4xl">👯‍♀️</div>
+          <div class="font-bold mt-1">Target Actor μ'</div>
+          <div class="text-xs text-gray-500 mt-1">软更新缓慢跟随</div>
+        </div>
+        <div class="panel text-center" style="background:#dbeafe;">
+          <div class="text-4xl">🎬</div>
+          <div class="font-bold mt-1">Critic Q(s,a)</div>
+          <div class="text-xs text-gray-500 mt-1">评估动作价值</div>
+        </div>
+        <div class="panel text-center" style="background:#e0e7ff;">
+          <div class="text-4xl">👯‍♂️</div>
+          <div class="font-bold mt-1">Target Critic Q'</div>
+          <div class="text-xs text-gray-500 mt-1">稳定 TD 目标</div>
+        </div>
+      </div>
+      <div class="mt-4 bg-brand-50 rounded p-3 text-sm">
+        <b>🌊 软更新：</b>θ' ← τ·θ + (1-τ)·θ'，τ 通常取 0.005 — 目标网络像"慢了 0.5%"的跟随。
+      </div>
+    </div>
+
+    <div class="grid md:grid-cols-3 gap-5 mb-6">
+      <div class="panel md:col-span-2">
+        <h3>🎯 连续动作可视化环境</h3>
+        <div id="scene-picker-slot" class="mb-3"></div>
+        <canvas id="track" width="600" height="350" style="width:100%;max-width:600px;background:linear-gradient(135deg,#ecfdf5,#f0f9ff);border-radius:8px;display:block;margin:0 auto;"></canvas>
+        <p class="text-xs text-gray-500 mt-2 text-center">🤖 智能体需要追踪 🎯 目标点，动作 = 连续向量 (fx, fy)</p>
+      </div>
+      <div class="panel">
+        <h3>🎚️ 控制参数</h3>
+        <label class="block text-sm font-semibold mb-1 mt-2">探索噪声 σ: <span id="sigma-val" class="text-brand-600 font-bold">0.30</span></label>
+        <input type="range" id="sigma" min="0" max="1" step="0.05" value="0.3" class="w-full" />
+        <label class="block text-sm font-semibold mb-1 mt-3">软更新 τ: <span id="tau-val" class="text-brand-600 font-bold">0.005</span></label>
+        <input type="range" id="tau" min="0.001" max="0.1" step="0.001" value="0.005" class="w-full" />
+        <div class="mt-4 grid grid-cols-2 gap-2">
+          <button id="train-btn" class="btn-primary col-span-2">▶ 训练</button>
+          <button id="reset-btn" class="btn-secondary col-span-2">↻ 重置</button>
+        </div>
+        <div class="mt-4 text-sm space-y-1">
+          <div>回合：<b id="ep" class="text-brand-600">0</b></div>
+          <div>当前距离：<b id="dist" class="text-pink-500">-</b></div>
+          <div>Q 值估计：<b id="qval" class="text-green-600">-</b></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>📈 每回合累计奖励</h3>
+      <div id="reward-chart" class="chart-box"></div>
+    </div>
+  </div>
+  <script type="module" src="../js/pages/ddpg.js"></script>
+</body>
+</html>

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>📐 动态规划 · RL 可视化学园</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+  <link rel="stylesheet" href="../css/global.css" />
+  <script>tailwind.config={theme:{extend:{colors:{brand:{500:'#8b5cf6',600:'#7c3aed',100:'#ede9fe'}}}}}</script>
+</head>
+<body class="bg-gradient-to-br from-brand-50 via-white to-pink-50 min-h-screen">
+  <div class="page-container">
+    <h1 class="page-title">📐 动态规划：策略迭代 & 价值迭代</h1>
+    <p class="page-desc">逐轮观察价值函数的收敛过程，体会 "评估 → 改进" 的循环机制。</p>
+
+    <div class="bg-gradient-to-r from-brand-100 to-pink-100 border-l-4 border-brand-500 rounded-lg p-4 mb-6">
+      <p class="text-sm leading-relaxed">
+        <b>🔮 动态规划思想：</b>把大问题拆成 "当前奖励 + 未来最优解" 的子问题。需要知道完整的环境模型（转移与奖励）。
+      </p>
+    </div>
+
+    <div class="panel mb-6">
+      <div class="flex items-center flex-wrap gap-4">
+        <div>
+          <label class="block text-sm font-semibold mb-2">算法</label>
+          <div class="btn-group flex">
+            <button data-mode="policy" class="active">策略迭代</button>
+            <button data-mode="value">价值迭代</button>
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-semibold mb-2">γ: <span id="gamma-val" class="text-brand-600">0.90</span></label>
+          <input type="range" id="gamma" min="0" max="0.99" step="0.01" value="0.9" />
+        </div>
+        <div class="flex-1"></div>
+        <button id="step-btn" class="btn-primary">▶ 单步执行</button>
+        <button id="auto-btn" class="btn-primary">⏩ 自动收敛</button>
+        <button id="reset-btn" class="btn-secondary">↻ 重置</button>
+      </div>
+    </div>
+
+    <div class="grid md:grid-cols-5 gap-5 mb-6">
+      <div class="panel md:col-span-3">
+        <h3>🗺️ 价值函数 & 策略</h3>
+        <div id="grid-container"></div>
+      </div>
+      <div class="panel md:col-span-2">
+        <h3>📊 收敛曲线（Δ值）</h3>
+        <div id="conv-chart" class="chart-box"></div>
+        <div class="mt-4 text-sm space-y-1">
+          <div>迭代轮次：<b id="iter" class="text-brand-600">0</b></div>
+          <div>最大变化 Δ：<b id="delta" class="text-pink-500">-</b></div>
+          <div>状态：<b id="status" class="text-gray-600">待开始</b></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid md:grid-cols-2 gap-4">
+      <div class="panel">
+        <h3>🔄 策略迭代</h3>
+        <p class="text-sm text-gray-600 leading-relaxed">① 完全评估当前策略的 V<sup>π</sup> → ② 贪心改进得到新策略 → 反复直到策略稳定。</p>
+      </div>
+      <div class="panel">
+        <h3>⚡ 价值迭代</h3>
+        <p class="text-sm text-gray-600 leading-relaxed">每步直接用 max 同时完成评估和改进：V(s) ← max<sub>a</sub> Σ P(s'|s,a)·[R + γV(s')]。</p>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="../js/pages/dp.js"></script>
+</body>
+</html>
