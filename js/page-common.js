@@ -12,7 +12,7 @@ export function renderNav(activeId) {
     <div class="max-w-7xl mx-auto px-4 py-2.5 flex items-center justify-between flex-wrap gap-2">
       <a href="../index.html" class="flex items-center gap-2 flex-shrink-0">
         <span class="text-2xl">🎮</span>
-        <span class="font-bold text-base bg-gradient-to-r from-brand-600 to-pink-500 bg-clip-text text-transparent">RL 可视化学园</span>
+        <span class="font-bold text-base bg-gradient-to-r from-brand-600 to-pink-500 bg-clip-text text-transparent">图解强化学习</span>
       </a>
       <div class="flex items-center gap-1 text-xs flex-wrap">
         ${groups.map(g => `
@@ -157,7 +157,7 @@ export function renderFooter() {
   footer.className = 'mt-12 border-t border-brand-100 bg-white/60 backdrop-blur';
   footer.innerHTML = `
     <div class="max-w-7xl mx-auto px-4 py-6 text-center text-sm text-gray-500">
-      <p>由 <a href="https://with.woa.com/" style="color: #8A2BE2;" target="_blank">With</a> 通过自然语言生成</p>
+      <p>图解强化学习 by xuefeng</p>
     </div>
   `;
   document.body.appendChild(footer);
