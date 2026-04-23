@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <title>🎨 算法漫画合集 · 图解强化学习</title>
+  <title>📖 算法精读合集 · 图解强化学习</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="../css/global.css" />
   <script>tailwind.config={theme:{extend:{colors:{brand:{500:'#8b5cf6',600:'#7c3aed',100:'#ede9fe'}}}}}</script>
@@ -23,8 +23,8 @@
 </head>
 <body class="bg-gradient-to-br from-brand-50 via-white to-pink-50 min-h-screen">
   <div class="page-container">
-    <h1 class="page-title">🎨 算法漫画合集</h1>
-    <p class="page-desc">每个算法都配套一部专属漫画，让抽象公式变成生动故事</p>
+    <h1 class="page-title">📖 算法精读合集</h1>
+    <p class="page-desc">每个算法都配套一篇原理长文 —— 通俗理解版 + 深入学习版，两种深度任你选择</p>
 
     <div class="flex gap-2 mb-6 flex-wrap">
       <button class="level-filter active" data-level="all">🌈 全部</button>
@@ -41,6 +41,8 @@
     import { ALGORITHMS } from '../js/algorithms.js';
     import { COMICS } from '../js/comics-data.js';
     import { launchComic } from '../js/comic-engine.js';
+    import { ARTICLES } from '../js/articles-data.js';
+    import { launchArticle } from '../js/article-engine.js';
 
     renderNav();
 
@@ -71,24 +73,50 @@
     function render() {
       const list = ALGORITHMS.filter(a => currentLevel === 'all' || a.level === currentLevel);
       coversBox.innerHTML = list.map((a, i) => {
-        const comic = COMICS[comicKeyMap[a.id]];
-        const frameCount = comic ? comic.frames.length : 0;
+        const key = comicKeyMap[a.id];
+        const article = ARTICLES[key];
+        const comic = COMICS[key];
+        const hasArticle = !!article;
         const hasComic = !!comic;
+
+        // 右上角角标
+        let badge;
+        if (hasArticle) {
+          const pMin = article.plain?.readMinutes || 5;
+          const dMin = article.deep?.readMinutes || 15;
+          badge = `📖 通俗 ${pMin}min · 深度 ${dMin}min`;
+        } else if (hasComic) {
+          badge = `📖 ${comic.frames.length} 格`;
+        } else {
+          badge = '📘 总论页';
+        }
+
+        // 按钮
+        let actionBtn;
+        if (hasArticle) {
+          actionBtn = `<button class="flex-1 px-3 py-1.5 rounded-full bg-gray-900 text-white text-xs font-bold launch-btn">📖 阅读长文</button>`;
+        } else if (hasComic) {
+          actionBtn = `<button class="flex-1 px-3 py-1.5 rounded-full bg-gray-900 text-white text-xs font-bold launch-btn">🎨 看漫画</button>`;
+        } else {
+          actionBtn = `<span class="flex-1 px-3 py-1.5 rounded-full bg-gray-200 text-gray-500 text-xs font-bold text-center">暂无内容</span>`;
+        }
+
+        // 标题
+        const title = hasArticle ? article.title : (comic ? comic.title : a.name);
+
         return `
           <div class="comic-cover" data-id="${a.id}" style="background: ${COVERS_COLORS[i % COVERS_COLORS.length]};">
             <div class="flex items-center justify-between mb-2">
               <span class="badge-${a.level}" style="font-size:0.7rem;padding:0.15rem 0.6rem;">${a.level}</span>
-              <span class="text-xs font-bold text-gray-600">${hasComic ? `📖 ${frameCount} 格` : '📘 总论页'}</span>
+              <span class="text-xs font-bold text-gray-600">${badge}</span>
             </div>
             <span class="comic-big-emoji">${a.icon}</span>
             <div class="text-center mb-3">
-              <div class="font-black text-lg text-gray-800" style="font-family:'Comic Sans MS',sans-serif;">${comic ? comic.title : a.name}</div>
+              <div class="font-black text-lg text-gray-800" style="font-family:'Comic Sans MS',sans-serif;">${title}</div>
               <div class="text-xs text-gray-600 mt-1">${a.desc}</div>
             </div>
             <div class="flex gap-2 mt-3">
-              ${hasComic
-                ? `<button class="flex-1 px-3 py-1.5 rounded-full bg-gray-900 text-white text-xs font-bold launch-btn">🎨 看漫画</button>`
-                : `<span class="flex-1 px-3 py-1.5 rounded-full bg-gray-200 text-gray-500 text-xs font-bold text-center">暂无漫画</span>`}
+              ${actionBtn}
               <a href="${a.page.replace(/^pages\//, '')}" class="flex-1 px-3 py-1.5 rounded-full bg-white text-gray-800 text-xs font-bold text-center border border-gray-300">🎮 动手玩</a>
             </div>
           </div>
@@ -102,8 +130,11 @@
         btn.addEventListener('click', (e) => {
           e.stopPropagation();
           const id = card.dataset.id;
-          const comic = COMICS[comicKeyMap[id]];
-          if (comic) launchComic(comic);
+          const key = comicKeyMap[id];
+          const article = ARTICLES[key];
+          const comic = COMICS[key];
+          if (article) launchArticle(article);
+          else if (comic) launchComic(comic);
         });
       });
     }

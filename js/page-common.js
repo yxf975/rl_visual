@@ -3,6 +3,8 @@ import { ALGORITHMS, CHAPTERS, groupByChapter, getAdjacentAlgorithms } from './a
 import { OVERVIEW_DATA } from './algo-overview-data.js';
 import { COMICS } from './comics-data.js';
 import { launchComic } from './comic-engine.js';
+import { ARTICLES } from './articles-data.js';
+import { launchArticle } from './article-engine.js';
 
 export function renderNav(activeId) {
   const groups = groupByChapter();
@@ -23,7 +25,7 @@ export function renderNav(activeId) {
             `).join('')}
           </div>
         `).join('<span class="nav-divider">·</span>')}
-        <a href="../pages/comics.html" class="nav-item nav-extra">🎨 合集</a>
+        <a href="../pages/comics.html" class="nav-item nav-extra">📖 合集</a>
       </div>
     </div>
     <style>
@@ -299,9 +301,26 @@ export function renderAlgoOverview(algoKey) {
   card.className = 'algo-overview-card fade-in';
 
   // 0. "先读漫画"引导 banner —— 算法页最重要的学习入口
+  const article = ARTICLES[algoKey];
   const comic = COMICS[algoKey];
   let bannerHtml = '';
-  if (comic) {
+  if (article) {
+    // 新版双版本长文
+    const pMin = article.plain?.readMinutes || 5;
+    const dMin = article.deep?.readMinutes || 15;
+    bannerHtml = `
+      <div class="read-first-banner" id="read-first-banner">
+        <div class="rfb-left">
+          <div class="rfb-emoji">📖</div>
+          <div class="rfb-text">
+            <div class="rfb-title">先读一篇 <span class="rfb-accent">原理长文</span>，再动手玩动画效果更好</div>
+            <div class="rfb-sub">🍵 通俗理解版 约 <b>${pMin}</b> 分钟 · 📐 深入学习版 约 <b>${dMin}</b> 分钟 · <b>两版自由切换</b></div>
+          </div>
+        </div>
+        <button class="rfb-cta" id="rfb-cta-btn" type="button">📖 开始阅读 →</button>
+      </div>
+    `;
+  } else if (comic) {
     const frameCount = comic.frames.length;
     const estMin = Math.max(2, Math.round(frameCount * 0.4));
     bannerHtml = `
@@ -389,10 +408,14 @@ export function renderAlgoOverview(algoKey) {
     container.appendChild(card);
   }
 
-  // Banner "打开漫画精读"按钮 —— 触发长图阅读模式
+  // Banner 按钮 —— 新版 article 优先，否则回退旧漫画
   const bannerBtn = card.querySelector('#rfb-cta-btn');
-  if (bannerBtn && comic) {
-    bannerBtn.addEventListener('click', () => launchComic(comic, { mode: 'scroll' }));
+  if (bannerBtn) {
+    if (article) {
+      bannerBtn.addEventListener('click', () => launchArticle(article));
+    } else if (comic) {
+      bannerBtn.addEventListener('click', () => launchComic(comic, { mode: 'scroll' }));
+    }
   }
 
   // 伪代码折叠/展开交互
