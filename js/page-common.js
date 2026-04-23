@@ -1,10 +1,9 @@
 // 页面通用工具：渲染页面顶部导航（按篇章分组）、训练目标卡、读懂动画面板、场景切换器
 import { ALGORITHMS, CHAPTERS, groupByChapter, getAdjacentAlgorithms } from './algorithms.js';
 import { OVERVIEW_DATA } from './algo-overview-data.js';
-import { COMICS } from './comics-data.js';
-import { launchComic } from './comic-engine.js';
-import { ARTICLES } from './articles-data.js';
-import { launchArticle } from './article-engine.js';
+import { ARTICLES_META } from './articles-meta.js';
+// 注意：articles-data.js（~190KB 正文）、comics-data.js、article-engine.js、comic-engine.js
+// 均通过 dynamic import() 懒加载，仅在用户真正触发时拉取，避免阻塞首屏。
 
 export function renderNav(activeId) {
   const groups = groupByChapter();
@@ -301,8 +300,7 @@ export function renderAlgoOverview(algoKey) {
   card.className = 'algo-overview-card fade-in';
 
   // 0. "先读漫画"引导 banner —— 算法页最重要的学习入口
-  const article = ARTICLES[algoKey];
-  const comic = COMICS[algoKey];
+  const article = ARTICLES_META[algoKey];
   let bannerHtml = '';
   if (article) {
     // 新版双版本长文
@@ -318,21 +316,6 @@ export function renderAlgoOverview(algoKey) {
           </div>
         </div>
         <button class="rfb-cta" id="rfb-cta-btn" type="button">📖 开始阅读 →</button>
-      </div>
-    `;
-  } else if (comic) {
-    const frameCount = comic.frames.length;
-    const estMin = Math.max(2, Math.round(frameCount * 0.4));
-    bannerHtml = `
-      <div class="read-first-banner" id="read-first-banner">
-        <div class="rfb-left">
-          <div class="rfb-emoji">📖</div>
-          <div class="rfb-text">
-            <div class="rfb-title">先看 <span class="rfb-accent">3 分钟漫画精读</span>，再动手玩动画效果更好</div>
-            <div class="rfb-sub">共 <b>${frameCount}</b> 格 · 约 <b>${estMin}</b> 分钟 · <b>滚动即可阅读</b>，一页读完不用翻页</div>
-          </div>
-        </div>
-        <button class="rfb-cta" id="rfb-cta-btn" type="button">🎨 打开漫画精读 →</button>
       </div>
     `;
   }
@@ -408,14 +391,32 @@ export function renderAlgoOverview(algoKey) {
     container.appendChild(card);
   }
 
-  // Banner 按钮 —— 新版 article 优先，否则回退旧漫画
+  // Banner 按钮 —— 点击时才懒加载正文数据与阅读引擎
   const bannerBtn = card.querySelector('#rfb-cta-btn');
-  if (bannerBtn) {
-    if (article) {
-      bannerBtn.addEventListener('click', () => launchArticle(article));
-    } else if (comic) {
-      bannerBtn.addEventListener('click', () => launchComic(comic, { mode: 'scroll' }));
-    }
+  if (bannerBtn && article) {
+    let loading = false;
+    bannerBtn.addEventListener('click', async () => {
+      if (loading) return;
+      loading = true;
+      const originalText = bannerBtn.textContent;
+      bannerBtn.textContent = '📖 正在加载…';
+      bannerBtn.disabled = true;
+      try {
+        const [{ ARTICLES }, { launchArticle }] = await Promise.all([
+          import('./articles-data.js'),
+          import('./article-engine.js'),
+        ]);
+        const full = ARTICLES[algoKey];
+        if (full) launchArticle(full);
+      } catch (err) {
+        console.error('[renderAlgoOverview] 文章加载失败', err);
+        alert('文章加载失败，请检查网络后重试');
+      } finally {
+        bannerBtn.textContent = originalText;
+        bannerBtn.disabled = false;
+        loading = false;
+      }
+    });
   }
 
   // 伪代码折叠/展开交互
