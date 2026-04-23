@@ -7,7 +7,6 @@ renderAlgoOverview('reinforce');
 mountComicButton(COMICS.reinforce);
 
 renderGoalCard(null, {
-  what: '<b>CartPole 倒立摆</b>：一个经典 RL 环境。小车上立着一根可以自由旋转的杆，智能体可以左推（动作 0）或右推（动作 1）小车。',
   goal: '让杆子<b>尽可能久地不倒</b>。每存活一步 +1 奖励。杆角度超过 ±12° 或小车跑出边界就判输。目标是让每回合存活 500 步（环境上限）。',
   success: '训练初期杆子很快就倒了（只存活 10-30 步）。随着策略网学到"杆左倾就左推/杆右倾就右推"的对应关系，存活时间稳步上升。100 回合左右能学到相当好的策略。',
   metrics: [
@@ -16,7 +15,6 @@ renderGoalCard(null, {
     '📈 <b>累计奖励曲线</b>：每回合存活步数。整体应呈上升趋势。',
     '📉 <b>梯度方差曲线</b>：勾选 "加入 Baseline" 能看到方差显著下降。',
   ],
-  note: '试试勾选/不勾选"加入 Baseline"对比两条方差曲线——这是 REINFORCE 最重要的改进点。',
 });
 
 // 简化版 CartPole 模拟：状态 = 角度 θ，动作 = 左推/右推

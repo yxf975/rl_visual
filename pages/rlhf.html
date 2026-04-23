@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>🎯 RLHF 三阶段 · 图解强化学习</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+  <link rel="stylesheet" href="../css/global.css" />
+  <script>tailwind.config={theme:{extend:{colors:{brand:{500:'#8b5cf6',600:'#7c3aed',100:'#ede9fe'}}}}}</script>
+  <style>
+    .stage-card { background: white; border-radius: 1.25rem; padding: 1.5rem; border: 2px solid #ede9fe; }
+    .stage-pill-big { padding: 0.5rem 1rem; border-radius: 9999px; font-weight: 700; display: inline-flex; align-items: center; gap: 0.5rem; }
+    .mem-bar { height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: flex-end; padding-right: 0.6rem; color: white; font-weight: 700; font-size: 0.8rem; transition: width 0.35s; }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-brand-50 via-white to-pink-50 min-h-screen">
+  <div class="page-container">
+    <h1 class="page-title">🎯 RLHF 三阶段流水线</h1>
+    <p class="page-desc">SFT → RM → PPO：ChatGPT / Claude / Llama3 都靠它"学会说人话"</p>
+
+    <div class="bg-gradient-to-r from-brand-100 to-pink-100 border-l-4 border-brand-500 rounded-lg p-4 mb-6">
+      <p class="text-sm leading-relaxed">
+        <b>🎯 场景介绍：</b>一个 <b>RLHF 三阶段全景演示</b>。上部分三张卡展示 SFT / RM / PPO 各自在做什么，中部的流程图让你亲眼看到四个模型（π / π_ref / V / RM）之间的数据流动，下部分则通过滑动 β 看到 KL 惩罚如何在"拟合 RM 分数"和"保留原始风格"之间权衡。
+      </p>
+    </div>
+
+    <!-- 目标说明卡锚点 -->
+    <div id="goal-slot"></div>
+
+    <!-- 三阶段卡 -->
+    <div class="grid md:grid-cols-3 gap-5 mb-6">
+      <div class="stage-card text-center">
+        <div class="stage-pill-big bg-green-100 text-green-800 mb-3">阶段 1 · SFT</div>
+        <div class="text-5xl mb-3">📚</div>
+        <h4 class="font-bold mb-2">监督微调</h4>
+        <p class="text-xs text-gray-600 leading-relaxed">用高质量"指令-回答"数据微调基础模型。最大化 log P(y|x)。</p>
+        <div class="mt-3 bg-green-50 rounded p-2 text-xs text-left">
+          <b>输入：</b>(prompt, 人类写的好回答)<br/>
+          <b>产物：</b>π<sub>SFT</sub>（后续所有阶段的起点）
+        </div>
+      </div>
+      <div class="stage-card text-center">
+        <div class="stage-pill-big bg-yellow-100 text-yellow-800 mb-3">阶段 2 · RM</div>
+        <div class="text-5xl mb-3">⚖️</div>
+        <h4 class="font-bold mb-2">奖励模型训练</h4>
+        <p class="text-xs text-gray-600 leading-relaxed">给同一 prompt 的 (chosen, rejected) 对训练一个打分器。</p>
+        <div class="mt-3 bg-yellow-50 rounded p-2 text-xs text-left">
+          <b>损失：</b>-log σ(r<sub>w</sub> - r<sub>l</sub>)<br/>
+          <b>产物：</b>Reward Model r(x,y)
+        </div>
+      </div>
+      <div class="stage-card text-center">
+        <div class="stage-pill-big bg-pink-100 text-pink-800 mb-3">阶段 3 · PPO</div>
+        <div class="text-5xl mb-3">🎯</div>
+        <h4 class="font-bold mb-2">策略对齐</h4>
+        <p class="text-xs text-gray-600 leading-relaxed">用 RM 给回答打分，PPO 优化策略，加 KL 惩罚防偏移。</p>
+        <div class="mt-3 bg-pink-50 rounded p-2 text-xs text-left">
+          <b>目标：</b>max 𝔼[r(x,y)] − β·KL(π ‖ π<sub>SFT</sub>)<br/>
+          <b>产物：</b>对齐后的 π
+        </div>
+      </div>
+    </div>
+
+    <!-- 四模型协同流水线 -->
+    <div class="panel mb-6">
+      <h3>🎬 四模型协同流水线（PPO 阶段内部）</h3>
+      <canvas id="rlhf-flow" width="900" height="280" style="width:100%;max-width:900px;background:#fff;border-radius:8px;display:block;margin:0 auto;"></canvas>
+      <div class="flex justify-center gap-3 mt-4 flex-wrap">
+        <button id="rlhf-play" class="btn-primary">▶ 播放 PPO 对齐过程</button>
+        <button id="rlhf-reset" class="btn-secondary">↻ 重置</button>
+      </div>
+      <p class="text-xs text-gray-500 mt-3 text-center">
+        🟡 数据流动：prompt → π 生成回答 → π_ref / RM / V 并行计算 → PPO 更新 π
+      </p>
+    </div>
+
+    <!-- 显存对比 -->
+    <div class="panel mb-6">
+      <h3>💾 为什么 RLHF 这么贵？—— 四模型同框显存图</h3>
+      <p class="text-sm text-gray-600 mb-4">以 7B 策略模型为例，RLHF 训练时显存里同时存在的模型：</p>
+      <div class="space-y-2">
+        <div class="flex items-center gap-3"><span class="w-24 text-xs font-bold text-pink-600">🎭 π（策略）</span><div class="mem-bar bg-pink-500" style="width:95%">~14 GB（FP16，要算梯度）</div></div>
+        <div class="flex items-center gap-3"><span class="w-24 text-xs font-bold text-amber-600">📖 π_ref</span><div class="mem-bar bg-amber-500" style="width:50%">~7 GB（冻结，只推理）</div></div>
+        <div class="flex items-center gap-3"><span class="w-24 text-xs font-bold text-sky-600">🎬 V（Critic）</span><div class="mem-bar bg-sky-500" style="width:95%">~14 GB（要算梯度）</div></div>
+        <div class="flex items-center gap-3"><span class="w-24 text-xs font-bold text-emerald-600">⚖️ RM</span><div class="mem-bar bg-emerald-500" style="width:50%">~7 GB（冻结）</div></div>
+      </div>
+      <div class="mt-4 bg-red-50 border-l-4 border-red-400 p-3 text-sm">
+        <b>⚠️ 总计 ≈ 42 GB</b> 是 SFT 阶段的 <b>3×</b>。这就是为什么 DPO（只需 2 模型）和 GRPO（去掉 Critic）这么重要。
+      </div>
+    </div>
+
+    <!-- 交互式：β 调节 KL-Reward 权衡 -->
+    <div class="panel mb-6">
+      <h3>🎚️ β（KL 惩罚系数）如何影响训练？</h3>
+      <p class="text-sm text-gray-600 mb-3">拖动下方滑块改变 β，观察 RM 奖励和 KL 散度如何此消彼长。</p>
+      <div class="flex items-center gap-4 flex-wrap mb-4">
+        <label class="text-sm font-semibold">β = <span id="beta-val" class="text-brand-600 font-bold">0.10</span></label>
+        <input type="range" id="beta" min="0.01" max="0.5" step="0.01" value="0.1" class="flex-1 min-w-[240px]" />
+        <span id="beta-hint" class="text-xs text-gray-500"></span>
+      </div>
+      <div id="kl-reward-chart" class="chart-box"></div>
+    </div>
+
+    <!-- PPO in LLM 交互演示 -->
+    <div class="panel mb-6">
+      <h3>💬 PPO 对同一 prompt 的三种回答打分</h3>
+      <div class="mb-3">
+        <label class="text-sm font-semibold">Prompt：</label>
+        <div class="bg-gray-100 rounded p-3 mt-1 text-sm font-mono">请用一句话介绍人工智能。</div>
+      </div>
+      <div class="grid md:grid-cols-3 gap-3" id="answer-cards">
+        <!-- 由 JS 渲染 -->
+      </div>
+      <div class="mt-4 bg-brand-50 rounded p-3 text-sm">
+        <b>📐 最终奖励：</b>R = RM 分数 − β · KL(π ‖ π<sub>SFT</sub>)
+        <span class="text-xs text-gray-600 block mt-1">KL 惩罚防止策略为了刷高分而变得离谱（比如重复"好的好的好的..."）</span>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="../js/pages/rlhf.js"></script>
+</body>
+</html>

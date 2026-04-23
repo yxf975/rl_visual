@@ -7,7 +7,6 @@ renderAlgoOverview('ac');
 mountComicButton(COMICS.ac);
 
 renderGoalCard(null, {
-  what: '同样是 <b>CartPole 倒立摆</b>环境，但这里用 <b>Actor-Critic 架构</b>：策略网（Actor）负责选动作，价值网（Critic）实时评估当前状态好坏。',
   goal: '观察 Actor 和 Critic 如何配合：Critic 计算 TD 误差 δ = r + γV(s\') − V(s)，δ 同时作为 Actor 的"优势信号"和 Critic 自己的损失。',
   success: '相比 REINFORCE，AC 训练更稳定：累计奖励曲线（紫色）比模拟的 REINFORCE 基线（红虚线）更平滑且收敛更快。',
   metrics: [
@@ -17,7 +16,6 @@ renderGoalCard(null, {
     '📈 <b>奖励对比</b>：紫色实线 = AC；红色虚线 = 模拟的 REINFORCE 对比基线。',
     '🔢 <b>V(s) 数值</b>：Critic 对当前状态的价值估计。',
   ],
-  note: '训练 lr_Actor 和 lr_Critic 是独立的——Critic 学得稍快（更大 lr）通常让 AC 更稳定。',
 });
 
 // 复用 CartPole

@@ -7,46 +7,75 @@ import { ARTICLES_META } from './articles-meta.js';
 
 export function renderNav(activeId) {
   const groups = groupByChapter();
+  const active = ALGORITHMS.find(a => a.id === activeId);
+  const activeChapterId = active ? active.chapter : null;
+
   const nav = document.createElement('nav');
   nav.className = 'sticky top-0 z-40 backdrop-blur bg-white/85 border-b border-brand-100 shadow-sm';
   nav.innerHTML = `
-    <div class="max-w-7xl mx-auto px-4 py-2.5 flex items-center justify-between flex-wrap gap-2">
-      <a href="../index.html" class="flex items-center gap-2 flex-shrink-0">
-        <span class="text-2xl">🎮</span>
+    <div class="max-w-7xl mx-auto px-4 py-2.5 flex items-center justify-between gap-3 flex-wrap">
+      <a href="../index.html" class="flex items-center gap-2 flex-shrink-0 group">
+        <span class="text-2xl group-hover:rotate-12 transition-transform">🎮</span>
         <span class="font-bold text-base bg-gradient-to-r from-brand-600 to-pink-500 bg-clip-text text-transparent">图解强化学习</span>
       </a>
-      <div class="flex items-center gap-1 text-xs flex-wrap">
-        ${groups.map(g => `
-          <div class="nav-chapter-group">
-            <span class="nav-chapter-tag" title="${g.chapter.title}">${g.chapter.emoji}</span>
-            ${g.items.map(a => `
-              <a href="../${a.page}" class="nav-item ${a.id === activeId ? 'active' : ''}">${a.icon} ${shortenName(a.name)}</a>
-            `).join('')}
-          </div>
-        `).join('<span class="nav-divider">·</span>')}
-        <a href="../pages/comics.html" class="nav-item nav-extra">📖 合集</a>
+      <div class="nav-main">
+        <a href="../index.html" class="nav-main-item">🏠 <span>首页</span></a>
+        ${groups.map(g => {
+          const hasMultiple = g.items.length > 1;
+          const isActive = g.chapter.id === activeChapterId;
+          if (!hasMultiple && g.items.length === 1) {
+            // 只有一个子项：直接点击跳转，不展示下拉
+            const only = g.items[0];
+            return `
+              <a href="../${only.page}" class="nav-main-item ${isActive ? 'active' : ''}" title="${g.chapter.title}">
+                <span>${g.chapter.emoji}</span>
+                <span>${chapterShort(g.chapter.title)}</span>
+              </a>
+            `;
+          }
+          return `
+            <div class="nav-main-group ${isActive ? 'active' : ''}" tabindex="0">
+              <span class="nav-main-item nav-main-trigger">
+                <span>${g.chapter.emoji}</span>
+                <span>${chapterShort(g.chapter.title)}</span>
+                <span class="nav-caret">▾</span>
+              </span>
+              <div class="nav-dropdown">
+                <div class="nav-dropdown-title">${g.chapter.emoji} ${g.chapter.title}</div>
+                <div class="nav-dropdown-sub">${g.chapter.subtitle || ''}</div>
+                <div class="nav-dropdown-items">
+                  ${g.items.map(a => `
+                    <a href="../${a.page}" class="nav-dropdown-item ${a.id === activeId ? 'active' : ''}">
+                      <span class="nav-di-icon">${a.icon}</span>
+                      <span class="nav-di-name">${a.name}</span>
+                    </a>
+                  `).join('')}
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('')}
+        <a href="../pages/comics.html" class="nav-main-item nav-main-extra">
+          <span>📖</span><span>漫画合集</span>
+        </a>
       </div>
     </div>
-    <style>
-      .nav-chapter-group { display: inline-flex; align-items: center; gap: 2px; padding: 2px 6px; background: #faf8ff; border-radius: 9999px; }
-      .nav-chapter-tag { font-size: 0.95rem; padding: 0 4px; }
-      .nav-item { padding: 3px 8px; border-radius: 6px; color: #4b5563; transition: all 0.15s; font-weight: 500; }
-      .nav-item:hover { background: #ede9fe; color: #6d28d9; }
-      .nav-item.active { background: #8b5cf6; color: white; font-weight: 700; }
-      .nav-item.nav-extra { background: linear-gradient(135deg,#fce7f3,#ede9fe); color: #7c3aed; font-weight: 700; }
-      .nav-divider { color: #c4b5fd; margin: 0 2px; }
-    </style>
   `;
   document.body.insertBefore(nav, document.body.firstChild);
 
   // 在标题下面自动插入"章节导读卡"（如果 active 算法存在）
-  const active = ALGORITHMS.find(a => a.id === activeId);
   if (active) {
     renderChapterBreadcrumb(active);
     renderContextBanner(active);
     // 页脚之前自动挂载章节导航
     setTimeout(() => renderChapterNav(active), 0);
   }
+}
+
+// 章节标题简写（用于顶部导航，节省空间）
+function chapterShort(title) {
+  // "第一篇 · 走进强化学习" -> "走进强化学习"
+  return title.replace(/^第[一二三四五六七八九十]+篇\s*·?\s*/, '').trim() || title;
 }
 
 // 导航栏里展示简短名称
@@ -166,32 +195,80 @@ export function renderFooter() {
 
 /**
  * 渲染训练目标卡：说明这个环境在做什么、目标是什么、如何算作成功
- * @param {string} selector 容器选择器，若为空则插入 page-container 顶部
+ *
+ * 插入策略（按优先级）：
+ *   1. 显式传入 selector → 插入到该容器 innerHTML
+ *   2. 页面内存在 #goal-slot 锚点 → 插入到该锚点（页面作者显式指定位置）
+ *   3. 默认：插到 .page-desc 之后，作为"页面导读"紧贴描述，
+ *      不打断下方任何 panel / grid（避免夹在控制按钮和结果展示之间）
+ *
+ * @param {string|null} selector 容器选择器，若为空则走自动插入逻辑
  * @param {{what:string, goal:string, success:string, metrics:string[], note?:string}} goal
  */
 export function renderGoalCard(selector, goal) {
-  const html = `
-    <div class="goal-card">
-      <p><b>🌍 环境是什么：</b>${goal.what}</p>
-      <p><b>🏆 我们在优化什么：</b>${goal.goal}</p>
-      <p><b>✅ 什么叫训练成功：</b>${goal.success}</p>
-      ${goal.metrics?.length ? `<p><b>📊 建议观察的指标：</b></p><ul>${goal.metrics.map(m => `<li>${m}</li>`).join('')}</ul>` : ''}
-      ${goal.note ? `<p class="mt-2 text-xs italic">${goal.note}</p>` : ''}
+  // 说明：自 v2 起，本卡专注作为"交互说明书"
+  //   - 原 what 字段已并入页面顶部紫色原理提示条，这里不再渲染（保留字段兼容旧调用）
+  //   - 原 note 字段（章节过渡）已由顶部 context-banner 承担，这里也不再渲染
+  //   - 仅保留 goal / success / metrics 这 3 块"跟交互直接相关"的内容
+  const cardInner = `
+    <div class="goal-card goal-card-v2">
+      <div class="goal-row">
+        <span class="goal-row-icon">🎯</span>
+        <div class="goal-row-body"><b>这个 demo 让你调什么：</b>${goal.goal}</div>
+      </div>
+      <div class="goal-row">
+        <span class="goal-row-icon">✅</span>
+        <div class="goal-row-body"><b>什么现象说明有效：</b>${goal.success}</div>
+      </div>
+      ${goal.metrics?.length ? `
+        <div class="goal-row">
+          <span class="goal-row-icon">👀</span>
+          <div class="goal-row-body">
+            <b>重点观察这几个指标：</b>
+            <ul class="goal-metrics-list">${goal.metrics.map(m => `<li>${m}</li>`).join('')}</ul>
+          </div>
+        </div>
+      ` : ''}
     </div>
   `;
+  const wrapperHtml = `
+    <section class="play-intro-wrap play-intro-wrap-v2">
+      <div class="play-intro-header play-intro-header-v2">
+        <span class="play-intro-emoji">📖</span>
+        <span class="play-intro-title-text">交互说明 · 你在玩什么</span>
+      </div>
+      ${cardInner}
+    </section>
+  `;
+
   if (selector) {
     const el = document.querySelector(selector);
-    if (el) el.innerHTML = html;
-  } else {
-    const container = document.querySelector('.page-container');
-    if (!container) return;
-    const wrap = document.createElement('div');
-    wrap.innerHTML = html;
-    // 插到 breadcrumb 与 h1 之后（即 .page-desc 之后）
-    const desc = container.querySelector('.page-desc');
-    if (desc && desc.nextSibling) container.insertBefore(wrap.firstElementChild, desc.nextSibling);
-    else container.appendChild(wrap.firstElementChild);
+    if (el) el.innerHTML = wrapperHtml;
+    return;
   }
+
+  const container = document.querySelector('.page-container');
+  if (!container) return;
+
+  const wrap = document.createElement('div');
+  wrap.innerHTML = wrapperHtml.trim();
+  const node = wrap.firstElementChild;
+
+  // 优先 1：#goal-slot（页面作者显式指定位置）
+  const slot = container.querySelector('#goal-slot');
+  if (slot) {
+    slot.appendChild(node);
+    return;
+  }
+
+  // 默认策略：插到 .page-desc 之后（作为"页面导读"，紧贴页面描述）
+  // 之前尝试插到第一个交互 grid 前，但许多页面的交互按钮在架构图 panel 里，
+  // 导致说明卡被夹在"控制按钮"和"结果展示"中间，把交互区截成两段。
+  // 改为紧随 page-desc 之后，语义顺畅、不打断下方任何模块。
+  const desc = container.querySelector('.page-desc');
+  if (desc && desc.nextSibling) container.insertBefore(node, desc.nextSibling);
+  else if (desc) container.appendChild(node);
+  else container.insertBefore(node, container.firstChild);
 }
 
 /**
@@ -311,8 +388,8 @@ export function renderAlgoOverview(algoKey) {
         <div class="rfb-left">
           <div class="rfb-emoji">📖</div>
           <div class="rfb-text">
-            <div class="rfb-title">先读一篇 <span class="rfb-accent">原理长文</span>，再动手玩动画效果更好</div>
-            <div class="rfb-sub">🍵 通俗理解版 约 <b>${pMin}</b> 分钟 · 📐 深入学习版 约 <b>${dMin}</b> 分钟 · <b>两版自由切换</b></div>
+            <div class="rfb-title">先 <span class="rfb-accent">了解一下原理</span>，再动手玩效果更好</div>
+            <div class="rfb-sub">🍵 通俗版 约 <b>${pMin}</b> 分钟 · 📐 深入版 约 <b>${dMin}</b> 分钟 · <b>两版自由切换</b></div>
           </div>
         </div>
         <button class="rfb-cta" id="rfb-cta-btn" type="button">📖 开始阅读 →</button>

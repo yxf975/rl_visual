@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>👥 GRPO · 图解强化学习</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+  <link rel="stylesheet" href="../css/global.css" />
+  <script>tailwind.config={theme:{extend:{colors:{brand:{500:'#8b5cf6',600:'#7c3aed',100:'#ede9fe'}}}}}</script>
+  <style>
+    .gpu-bar { height: 36px; border-radius: 8px; display: flex; align-items: center; padding: 0 0.8rem; color: white; font-weight: 700; font-size: 0.85rem; }
+    .ans-tile { transition: all 0.3s; border: 2px solid transparent; }
+    .ans-tile.positive { border-color: #10b981; background: linear-gradient(135deg, #ecfdf5, #fff); }
+    .ans-tile.negative { border-color: #ef4444; background: linear-gradient(135deg, #fef2f2, #fff); }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-brand-50 via-white to-pink-50 min-h-screen">
+  <div class="page-container">
+    <h1 class="page-title">👥 GRPO · 组相对策略优化</h1>
+    <p class="page-desc">DeepSeek 提出：扔掉 Critic，用组内归一化估计优势 —— DeepSeek-R1 的秘密武器</p>
+
+    <div class="bg-gradient-to-r from-brand-100 to-pink-100 border-l-4 border-brand-500 rounded-lg p-4 mb-6">
+      <p class="text-sm leading-relaxed">
+        <b>🎯 场景介绍：</b>两个核心实验带你玩透 GRPO：
+        <b>① 显存对决</b>：直观对比 PPO（4 模型）和 GRPO（3 模型）在 70B 规模下的显存差异；
+        <b>② 组内归一化</b>：点按钮生成一组回答，看组内均值作基线、标准差做归一化如何得到有正有负的优势 A<sub>i</sub>；
+        <b>③ R1-Zero 训练曲线</b>：重现 DeepSeek-R1-Zero 那条让人惊艳的"自发学会反思"曲线。
+      </p>
+    </div>
+
+    <div id="goal-slot"></div>
+
+    <!-- 实验 1：PPO vs GRPO 显存对比 -->
+    <div class="panel mb-6">
+      <h3>💾 PPO vs GRPO 显存对决（70B 策略）</h3>
+      <p class="text-sm text-gray-600 mb-4">在大模型场景下，Critic 是另一个和策略同规模的网络。GRPO 的最大价值是——<b>它根本不要 Critic</b>。</p>
+
+      <div class="grid md:grid-cols-2 gap-5">
+        <div>
+          <h4 class="font-bold text-red-600 mb-3">❌ PPO（4 模型）</h4>
+          <div class="space-y-2">
+            <div class="gpu-bar" style="background:#ec4899;width:100%">🎭 π（70B） · 140 GB · 训练</div>
+            <div class="gpu-bar" style="background:#f59e0b;width:55%">📖 π_ref（70B） · 70 GB</div>
+            <div class="gpu-bar" style="background:#0ea5e9;width:100%">🎬 V Critic（70B） · 140 GB · 训练</div>
+            <div class="gpu-bar" style="background:#10b981;width:55%">⚖️ RM（70B） · 70 GB</div>
+          </div>
+          <div class="mt-3 bg-red-50 border-l-4 border-red-400 p-3 text-sm">
+            <b>显存总计 ≈ 420 GB</b><br/>
+            <span class="text-xs text-gray-600">需要 6~8 张 80GB A100，且 Critic 本身训起来很难收敛</span>
+          </div>
+        </div>
+        <div>
+          <h4 class="font-bold text-green-600 mb-3">✅ GRPO（3 模型，去 Critic）</h4>
+          <div class="space-y-2">
+            <div class="gpu-bar" style="background:#ec4899;width:100%">🎭 π（70B） · 140 GB · 训练</div>
+            <div class="gpu-bar" style="background:#f59e0b;width:55%">📖 π_ref（70B） · 70 GB</div>
+            <div class="gpu-bar opacity-30" style="background:#cbd5e1;width:5%;color:#475569">（无 Critic）</div>
+            <div class="gpu-bar" style="background:#10b981;width:55%">⚖️ RM（70B） · 70 GB</div>
+          </div>
+          <div class="mt-3 bg-green-50 border-l-4 border-green-400 p-3 text-sm">
+            <b>显存总计 ≈ 280 GB</b>（节省 33%）<br/>
+            <span class="text-xs text-gray-600">DeepSeek-R1 的可验证奖励场景甚至可以去掉 RM，只剩 2 个模型！</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 实验 2：组内归一化演示 -->
+    <div class="panel mb-6">
+      <h3>🎲 组内归一化优势 —— 核心交互演示</h3>
+      <p class="text-sm text-gray-600 mb-4">GRPO 对同一 prompt 采样一组（N 个）回答，用 RM 打分后用组内均值作基线、组内标准差归一化，得到有正有负的优势 A<sub>i</sub>。</p>
+
+      <div class="flex items-center gap-4 flex-wrap mb-4">
+        <label class="text-sm font-semibold">组大小 N = <span id="gsize-val" class="text-brand-600 font-bold">6</span></label>
+        <input type="range" id="gsize" min="2" max="12" step="1" value="6" />
+        <button id="grpo-gen" class="btn-primary">🎲 重新采样一组</button>
+      </div>
+
+      <div id="grpo-demo"></div>
+
+      <div class="mt-4 grid md:grid-cols-2 gap-5">
+        <div>
+          <h4 class="font-semibold mb-2">📊 组内分数 vs 优势</h4>
+          <div id="advantage-chart" class="chart-box" style="height:240px"></div>
+        </div>
+        <div class="bg-brand-50 rounded-lg p-4 text-sm">
+          <b>📐 GRPO 优势公式：</b><br/>
+          <div class="mt-2 font-mono text-xs bg-white rounded p-2">A<sub>i</sub> = (r<sub>i</sub> − μ<sub>G</sub>) / σ<sub>G</sub></div>
+          <ul class="mt-3 space-y-1 text-xs">
+            <li>✅ <b>A<sub>i</sub> &gt; 0</b>：比组内平均好 → 增加该回答概率</li>
+            <li>❌ <b>A<sub>i</sub> &lt; 0</b>：比组内平均差 → 减少该回答概率</li>
+            <li>🎯 <b>自动缩放</b>：σ 归一化让优势尺度和绝对分数无关</li>
+            <li>💡 <b>无偏基线</b>：均值自然是无偏估计，比 Critic 估的 V(s) 更准</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- 实验 3：R1-Zero 训练曲线 -->
+    <div class="panel mb-6">
+      <h3>📈 R1-Zero 训练曲线 · "顿悟时刻"</h3>
+      <p class="text-sm text-gray-600 mb-3">DeepSeek-R1-Zero 的经典曲线：GRPO + 规则奖励（答案对 +1 / 错 -1），模型自发学会了在回答前"先想想"，平均响应长度暴增，准确率随之爬升。</p>
+      <div id="r1-chart" class="chart-box" style="height:360px"></div>
+      <div class="mt-4 grid md:grid-cols-3 gap-3 text-sm">
+        <div class="panel" style="background:#ecfdf5;">
+          <div class="text-xl">✅</div>
+          <b>准确率</b>
+          <p class="text-xs text-gray-600 mt-1">从 20% 左右持续爬升至 80%+，无需 SFT 引导。</p>
+        </div>
+        <div class="panel" style="background:#fef3c7;">
+          <div class="text-xl">📏</div>
+          <b>响应长度</b>
+          <p class="text-xs text-gray-600 mt-1">模型自发学会写"Let me think step by step"，长度翻倍。</p>
+        </div>
+        <div class="panel" style="background:#f5f3ff;">
+          <div class="text-xl">💡</div>
+          <b>Aha Moment</b>
+          <p class="text-xs text-gray-600 mt-1">某步突然出现"Wait, let me reconsider..."——反思能力自涌现。</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 对比总结 -->
+    <div class="panel">
+      <h3>🔍 GRPO vs PPO 关键差异表</h3>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead class="bg-brand-100">
+            <tr>
+              <th class="p-2 text-left">维度</th>
+              <th class="p-2">PPO (RLHF)</th>
+              <th class="p-2">GRPO</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y">
+            <tr><td class="p-2 font-bold">优势估计</td><td class="p-2 text-center">Critic 预测 V(s) → GAE</td><td class="p-2 text-center">组内 (r−μ)/σ</td></tr>
+            <tr><td class="p-2 font-bold">训练网络数</td><td class="p-2 text-center">4（含 Critic）</td><td class="p-2 text-center">3（无 Critic）</td></tr>
+            <tr><td class="p-2 font-bold">显存代价</td><td class="p-2 text-center">🔴 高</td><td class="p-2 text-center">🟢 中</td></tr>
+            <tr><td class="p-2 font-bold">奖励来源</td><td class="p-2 text-center">RM</td><td class="p-2 text-center">RM 或规则奖励</td></tr>
+            <tr><td class="p-2 font-bold">一次采样数</td><td class="p-2 text-center">1（单条轨迹）</td><td class="p-2 text-center">N（组内采样）</td></tr>
+            <tr><td class="p-2 font-bold">典型 β / clip</td><td class="p-2 text-center">ε=0.2, β=0.1</td><td class="p-2 text-center">ε=0.2, β=0.04</td></tr>
+            <tr><td class="p-2 font-bold">代表作</td><td class="p-2 text-center">ChatGPT, Claude</td><td class="p-2 text-center">DeepSeek-R1, DeepSeek-Math</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="../js/pages/grpo.js"></script>
+</body>
+</html>

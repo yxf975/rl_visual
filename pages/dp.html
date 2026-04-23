@@ -15,9 +15,12 @@
 
     <div class="bg-gradient-to-r from-brand-100 to-pink-100 border-l-4 border-brand-500 rounded-lg p-4 mb-6">
       <p class="text-sm leading-relaxed">
-        <b>🔮 动态规划思想：</b>把大问题拆成 "当前奖励 + 未来最优解" 的子问题。需要知道完整的环境模型（转移与奖励）。
+        <b>🎯 场景介绍：</b>同一个 <b>4×4 网格世界</b>，但这次 <b>环境模型 P 和 R 完全已知</b>。我们用动态规划把大问题拆成 "当前奖励 + 未来最优解" 的子问题，直接 "算出" 最优 V* 和最优策略 π*。
       </p>
     </div>
+
+    <!-- 目标说明卡锚点：放在"原理讲解"之后、"交互控件"之前 -->
+    <div id="goal-slot"></div>
 
     <div class="panel mb-6">
       <div class="flex items-center flex-wrap gap-4">

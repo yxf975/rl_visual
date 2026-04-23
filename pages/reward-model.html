@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>⚖️ Reward Model · 图解强化学习</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+  <link rel="stylesheet" href="../css/global.css" />
+  <script>tailwind.config={theme:{extend:{colors:{brand:{500:'#8b5cf6',600:'#7c3aed',100:'#ede9fe'}}}}}</script>
+  <style>
+    .pair-card { transition: all 0.2s; border: 2px solid #e5e7eb; }
+    .pair-card.chosen { border-color: #10b981; background: #ecfdf5; }
+    .pair-card.rejected { border-color: #ef4444; background: #fef2f2; opacity: 0.75; }
+    .pair-card:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(139,92,246,0.15); }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-brand-50 via-white to-pink-50 min-h-screen">
+  <div class="page-container">
+    <h1 class="page-title">⚖️ Reward Model · 奖励模型</h1>
+    <p class="page-desc">对齐算法的心脏 —— 把"人类偏好"编码成一个可微分的打分函数</p>
+
+    <div class="bg-gradient-to-r from-brand-100 to-pink-100 border-l-4 border-brand-500 rounded-lg p-4 mb-6">
+      <p class="text-sm leading-relaxed">
+        <b>🎯 场景介绍：</b>本页三个实验让你亲手"玩"一个奖励模型：
+        <b>① Pairwise 标注</b>：选 chosen/rejected，看 RM 训练损失下降；
+        <b>② 打分分布演化</b>：训练越久，chosen/rejected 的分数差距越大；
+        <b>③ RM Hacking</b>：策略学会刷长度、礼貌词等"作弊"手段，RM 分上涨但真实质量反而下降。
+      </p>
+    </div>
+
+    <div id="goal-slot"></div>
+
+    <!-- 实验 1：Pairwise 标注模拟 -->
+    <div class="panel mb-6">
+      <h3>🧪 实验 1 · Pairwise 标注模拟（Bradley-Terry 训练）</h3>
+      <p class="text-sm text-gray-600 mb-4">对下面每一组回答点击你认为更好的那一个（chosen），另一个自动成为 rejected。每标注一组，RM 的 Pairwise Loss 会立即下降一步。</p>
+
+      <div id="pair-stage" class="space-y-4">
+        <!-- 由 JS 渲染 -->
+      </div>
+
+      <div class="mt-6 grid md:grid-cols-2 gap-5">
+        <div>
+          <h4 class="font-semibold mb-2">📉 Pairwise Loss 下降曲线</h4>
+          <div id="pair-loss-chart" class="chart-box" style="height:240px"></div>
+        </div>
+        <div>
+          <h4 class="font-semibold mb-2">📊 当前 chosen / rejected 分数差 (margin)</h4>
+          <div id="pair-margin-chart" class="chart-box" style="height:240px"></div>
+        </div>
+      </div>
+
+      <div class="flex gap-2 mt-4 flex-wrap">
+        <button id="pair-reset" class="btn-secondary">↻ 重置实验</button>
+        <span class="text-sm text-gray-500 self-center">已标注：<b id="pair-count" class="text-brand-600">0</b> 对</span>
+      </div>
+
+      <div class="mt-4 bg-brand-50 rounded p-3 text-sm leading-relaxed">
+        <b>📐 Bradley-Terry 模型：</b>P(y<sub>w</sub> &gt; y<sub>l</sub> | x) = σ(r(x,y<sub>w</sub>) − r(x,y<sub>l</sub>))<br/>
+        <b>Pairwise Loss：</b>L = −log σ(r<sub>w</sub> − r<sub>l</sub>)，即希望 chosen 的分数 − rejected 的分数尽可能大（然后被 sigmoid 压到概率）。
+      </div>
+    </div>
+
+    <!-- 实验 2：分数分布演化 -->
+    <div class="panel mb-6">
+      <h3>🧪 实验 2 · chosen/rejected 分数分布演化</h3>
+      <p class="text-sm text-gray-600 mb-3">拖动滑块观察不同训练步数下，RM 给一批 chosen 和 rejected 回答打分的分布如何分离。</p>
+      <div class="flex items-center gap-4 flex-wrap mb-4">
+        <label class="text-sm font-semibold">训练步数：<span id="step-val" class="text-brand-600 font-bold">0</span></label>
+        <input type="range" id="train-step" min="0" max="100" step="1" value="0" class="flex-1 min-w-[260px]" />
+      </div>
+      <div id="dist-chart" class="chart-box" style="height:320px"></div>
+      <div class="grid md:grid-cols-3 gap-3 mt-4">
+        <div class="panel text-center" style="background:#ecfdf5;">
+          <div class="text-xs font-semibold text-green-700">chosen 均值</div>
+          <div class="text-2xl font-bold text-green-600" id="mean-w">0.0</div>
+        </div>
+        <div class="panel text-center" style="background:#fef2f2;">
+          <div class="text-xs font-semibold text-red-700">rejected 均值</div>
+          <div class="text-2xl font-bold text-red-500" id="mean-l">0.0</div>
+        </div>
+        <div class="panel text-center" style="background:#f5f3ff;">
+          <div class="text-xs font-semibold text-brand-600">margin (w − l)</div>
+          <div class="text-2xl font-bold text-brand-600" id="margin">0.0</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 实验 3：RM Hacking 与过度优化 -->
+    <div class="panel mb-6">
+      <h3>🐛 实验 3 · RM Hacking 与过度优化（Goodhart's Law）</h3>
+      <p class="text-sm text-gray-600 mb-3">当策略训练越久，它会"学会"利用 RM 的漏洞（刷长度、刷礼貌词）。看 RM 打分继续上涨，但人类真实满意度如何掉头下跌。</p>
+      <div id="hacking-chart" class="chart-box" style="height:360px"></div>
+      <div class="mt-4 grid md:grid-cols-3 gap-3 text-sm">
+        <div class="panel" style="background:#fef3c7;">
+          <b>🎯 经典症状：</b>
+          <ul class="list-disc pl-4 mt-1 text-xs space-y-1 text-gray-700">
+            <li>刷长度（长回答=高分）</li>
+            <li>堆叠"好的""当然""希望能帮到您"</li>
+            <li>过度格式化（emoji、加粗、小标题）</li>
+            <li>重复关键词</li>
+          </ul>
+        </div>
+        <div class="panel" style="background:#dbeafe;">
+          <b>🛡️ 常见防御：</b>
+          <ul class="list-disc pl-4 mt-1 text-xs space-y-1 text-gray-700">
+            <li>限制 KL（β 系数）</li>
+            <li>集成多个 RM 取 min</li>
+            <li>长度归一化奖励</li>
+            <li>定期用新数据 refresh RM</li>
+          </ul>
+        </div>
+        <div class="panel" style="background:#dcfce7;">
+          <b>📏 Goodhart's Law：</b>
+          <p class="text-xs text-gray-700 mt-1">"当一个指标变成目标，它就不再是个好指标。" —— 正是 RM 被过度优化时发生的事。</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 概念卡：RM 的输入输出 -->
+    <div class="panel">
+      <h3>🧠 RM 的网络结构一眼看穿</h3>
+      <div class="grid md:grid-cols-4 gap-3 items-center text-center text-sm">
+        <div class="panel" style="background:#fef3c7;">
+          <div class="text-4xl">📝</div>
+          <div class="font-bold mt-1">输入</div>
+          <div class="text-xs text-gray-600 mt-1">prompt + response</div>
+        </div>
+        <div class="text-3xl text-brand-500 font-black">→</div>
+        <div class="panel" style="background:#fce7f3;">
+          <div class="text-4xl">🧠</div>
+          <div class="font-bold mt-1">Transformer</div>
+          <div class="text-xs text-gray-600 mt-1">通常基于同一个 SFT 模型 <br/>去掉 LM Head，加一个标量头</div>
+        </div>
+        <div class="text-3xl text-brand-500 font-black">→</div>
+        <div class="panel" style="background:#dcfce7;">
+          <div class="text-4xl">🔢</div>
+          <div class="font-bold mt-1">输出</div>
+          <div class="text-xs text-gray-600 mt-1">一个标量 r ∈ ℝ<br/>（最后一个 token 的分数）</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="../js/pages/reward-model.js"></script>
+</body>
+</html>

@@ -13,9 +13,13 @@
     <h1 class="page-title">✂️ PPO · 近端策略优化</h1>
     <p class="page-desc">工业界最广泛使用的强化学习算法 —— 用"裁剪"替代复杂约束，简单又高效</p>
 
-    <div class="bg-gradient-to-r from-brand-100 to-pink-100 border-l-4 border-brand-500 rounded-lg p-4 mb-6 text-sm">
-      <b>核心公式：</b> L<sup>CLIP</sup> = 𝔼[ min( r(θ)·A, clip(r(θ), 1-ε, 1+ε)·A ) ]，其中 r(θ) = π<sub>新</sub>/π<sub>旧</sub>
+    <div class="bg-gradient-to-r from-brand-100 to-pink-100 border-l-4 border-brand-500 rounded-lg p-4 mb-6 text-sm leading-relaxed">
+      <p class="mb-2"><b>🎯 场景介绍：</b>一个 <b>PPO 裁剪目标函数的数学可视化</b>。横轴是概率比 r = π<sub>new</sub>/π<sub>old</sub>，纵轴是目标函数值。你可以改变优势 A 和裁剪系数 ε，实时看 PPO 的行为。</p>
+      <p><b>核心公式：</b> L<sup>CLIP</sup> = 𝔼[ min( r(θ)·A, clip(r(θ), 1-ε, 1+ε)·A ) ]，其中 r(θ) = π<sub>新</sub>/π<sub>旧</sub></p>
     </div>
+
+    <!-- 目标说明卡锚点：放在"原理讲解"之后、"交互控件"之前 -->
+    <div id="goal-slot"></div>
 
     <div class="grid md:grid-cols-3 gap-5 mb-6">
       <div class="panel md:col-span-2">

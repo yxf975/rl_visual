@@ -23,6 +23,11 @@
     <h1 class="page-title">🧠 DQN（深度Q网络）</h1>
     <p class="page-desc">用神经网络近似 Q 值 + 经验回放 + 目标网络 = 深度强化学习破冰之作</p>
 
+    <div class="bg-gradient-to-r from-brand-100 to-pink-100 border-l-4 border-brand-500 rounded-lg p-4 mb-6 text-sm leading-relaxed">
+      <b>🎯 场景介绍：</b>这不是一个真实训练，而是一个<b>"DQN 训练循环动画演示"</b>：用流程图 + 模拟数据展示 DQN 的每一步在干什么。<br/>
+      <b>💡 提示：</b>这是一个简化演示，真实 DQN 的经验池通常容量 10⁶，这里为了可视化缩到 64 格。
+    </div>
+
     <!-- 架构流程图 -->
     <div class="panel mb-6">
       <h3>🏗️ DQN 整体架构</h3>
@@ -71,6 +76,9 @@
         <button id="reset-btn" class="btn-secondary">↻ 重置</button>
       </div>
     </div>
+
+    <!-- 目标说明卡锚点：放在"原理讲解/架构图"之后、"交互区"之前 -->
+    <div id="goal-slot"></div>
 
     <div class="grid md:grid-cols-2 gap-5 mb-6">
       <div class="panel">

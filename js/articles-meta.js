@@ -93,6 +93,9 @@ export const ARTICLES_META = {
     plain: { readMinutes: 8 },
     deep:  { readMinutes: 18 },
   },
+  // 注意：rlhf / reward-model / dpo / grpo / align-compare 这 5 个新页
+  // 目前共享上面这条 llm 文章作为原理读物（由算法页内 algoKey 去映射）。
+  // 如果未来单独写了长文，请在这里补 meta，并在 articles-data.js 补正文。
 };
 
 export default ARTICLES_META;

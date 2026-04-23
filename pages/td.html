@@ -14,9 +14,13 @@
     <p class="page-desc">悬崖行走环境：左下起点 🏁 → 右下终点 💎，掉悬崖 -100 分。观察两种算法的"性格差异"！</p>
 
     <div class="bg-gradient-to-r from-brand-100 to-pink-100 border-l-4 border-brand-500 rounded-lg p-4 mb-6 text-sm leading-relaxed">
+      <b>🎯 场景介绍：</b><b>三种 Gridworld 环境任你切换</b>。每种环境对 SARSA 和 Q-Learning 的"性格差异"都会有不同表现。<br/>
       <b>👧 SARSA（on-policy）：</b>用下一步实际动作更新 Q → 学到"探索过程中的最优"，保守远离悬崖。<br/>
       <b>🦸 Q-Learning（off-policy）：</b>用下一步最优动作更新 Q → 学到"真正最优路径"，训练时常掉悬崖。
     </div>
+
+    <!-- 目标说明卡锚点：放在"原理讲解"之后、"交互控件"之前 -->
+    <div id="goal-slot"></div>
 
     <div class="panel mb-6">
       <div class="flex items-center flex-wrap gap-4">

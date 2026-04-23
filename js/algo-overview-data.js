@@ -501,4 +501,191 @@ export const OVERVIEW_DATA = {
     ],
     flowLoop: '↩ 持续收集人类反馈，迭代优化',
   },
+
+  // ===== RLHF 三阶段 =====
+  rlhf: {
+    carStory: `想象训练一个 ChatGPT：预训练模型只会"接龙"，并不知道怎样回答才"对人胃口"。
+      RLHF 三阶段像培养一个新员工：<b>SFT（岗前培训）</b>：照着示范回答学一遍；
+      <b>RM（打分考官）</b>：请专家对比回答对的好坏，训出一个"偏好打分器"；
+      <b>PPO（反复练习）</b>：让员工一边答题，一边由考官打分，根据分数调整答题习惯——但不允许离原始风格太远（KL 惩罚）。`,
+    mapping: [
+      { label: '📚 SFT', value: '高质量问答对监督微调，得到 π_SFT' },
+      { label: '⚖️ RM', value: '(chosen, rejected) 偏好对训出打分器 r(x,y)' },
+      { label: '🎯 PPO', value: '用 r 打分 + KL 惩罚，用 PPO 优化策略 π' },
+      { label: '🎭 π（策略）', value: '正在训练的大模型（Actor）' },
+      { label: '📖 π_ref', value: '冻结的 SFT 模型，用于算 KL 防跑偏' },
+      { label: '🎬 V（Critic）', value: 'PPO 的价值网络（大模型场景下很贵）' },
+    ],
+    pseudocode: [
+      { section: '— 阶段 1：SFT 监督微调 —' },
+      { code: 'π<sub>SFT</sub> ← <span class="fn">finetune</span>(预训练模型, 高质量 (x,y) 对)', comment: '最大化 log π(y|x)' },
+      { section: '— 阶段 2：RM 奖励模型训练 —' },
+      { code: '<span class="kw">for each</span> (x, y<sub>w</sub>, y<sub>l</sub>) ∈ 人类偏好数据:', comment: 'w=chosen, l=rejected' },
+      { code: '  L<sub>RM</sub> = −<span class="fn">log</span> σ(r(x,y<sub>w</sub>) − r(x,y<sub>l</sub>))', comment: 'Bradley-Terry 偏好建模' },
+      { section: '— 阶段 3：PPO 策略对齐 —' },
+      { code: '<span class="kw">for</span> iteration:', comment: '' },
+      { code: '  y ∼ π<sub>θ</sub>(·|x)', comment: '当前策略生成回答' },
+      { code: '  R = r(x,y) − β·KL(π<sub>θ</sub> ‖ π<sub>SFT</sub>)', comment: '奖励 = 打分 − β×偏移惩罚' },
+      { code: '  用 PPO 更新 π<sub>θ</sub>', comment: '和第四篇 PPO 完全一样的 clip 目标' },
+    ],
+    flow: [
+      { icon: '📚', label: 'SFT 微调' },
+      { icon: '👥', label: '收集偏好' },
+      { icon: '⚖️', label: '训练 RM' },
+      { icon: '🎯', label: 'PPO 对齐' },
+      { icon: '🛡️', label: 'KL 约束' },
+    ],
+    flowLoop: '↩ 持续收集反馈，迭代循环',
+  },
+
+  // ===== Reward Model =====
+  'reward-model': {
+    carStory: `"什么是好回答？"——你没法写代码描述。但可以让人类来标：给同一问题的两个回答 A/B，
+      让标注员选"哪个更好"。Reward Model 就是把这种<b>相对偏好</b>编码成一个<b>绝对打分函数</b> r(x, y) 的神经网络。
+      训练目标：chosen 的分数应该比 rejected 高。训好后，后续 PPO/GRPO 都靠它来给生成的回答打分——<b>RM 就是对齐算法的"心脏"</b>。`,
+    carStoryExtra: `<b>🔍 更深入理解：</b><br/>
+      <b>Bradley-Terry 模型</b>：假设人类偏好服从 P(y<sub>w</sub> > y<sub>l</sub>) = σ(r(x,y<sub>w</sub>) − r(x,y<sub>l</sub>))，
+      训练目标就是最大化这个似然。也就是 pairwise loss：L = −log σ(r<sub>w</sub> − r<sub>l</sub>)。<br/><br/>
+      <b>🐛 RM Hacking（奖励破解）：</b>训练久了，策略会发现 RM 的漏洞——比如"长回答得分高"、"开头说'当然可以'得分高"，
+      策略就刷长度、刷礼貌词，真实质量并没有提升。这是 RLHF 最大的坑。<br/><br/>
+      <b>📉 过度优化（Goodhart's Law）：</b>经典曲线——RM 打分一路上涨，但人类真实满意度先升后降。
+      解决办法：① 限制 KL（β 系数）② 集成多个 RM 取 min ③ 定期用新数据 refresh RM。`,
+    mapping: [
+      { label: '偏好对', value: '(prompt, chosen, rejected) 三元组' },
+      { label: '打分器 r(x,y)', value: '神经网络：输入问答 → 输出标量分数' },
+      { label: 'Pairwise Loss', value: '−log σ(r_w − r_l)，越负越好' },
+      { label: 'RM Hacking', value: '策略发现 RM 漏洞后"刷分"' },
+      { label: '过度优化', value: 'RM 分数↑ 但人类真实满意度↓' },
+    ],
+    pseudocode: [
+      { section: '— Bradley-Terry 偏好建模 —' },
+      { code: 'P(y<sub>w</sub> &gt; y<sub>l</sub> | x) = σ(r(x,y<sub>w</sub>) − r(x,y<sub>l</sub>))', comment: '人类选 chosen 的概率' },
+      { section: '— RM 训练循环 —' },
+      { code: '<span class="kw">for each</span> (x, y<sub>w</sub>, y<sub>l</sub>) <span class="kw">in</span> D<sub>pref</sub>:', comment: '遍历所有偏好对' },
+      { code: '  s<sub>w</sub> ← r<sub>φ</sub>(x, y<sub>w</sub>)', comment: 'chosen 的分数' },
+      { code: '  s<sub>l</sub> ← r<sub>φ</sub>(x, y<sub>l</sub>)', comment: 'rejected 的分数' },
+      { code: '  L = −<span class="fn">log</span> σ(s<sub>w</sub> − s<sub>l</sub>)', comment: '希望 s_w 远大于 s_l' },
+      { code: '  φ ← φ − η·∇<sub>φ</sub> L', comment: '反向传播更新' },
+    ],
+    flow: [
+      { icon: '📝', label: '收集偏好对' },
+      { icon: '🔢', label: '打分 r(x,y)' },
+      { icon: '⚖️', label: 'Pairwise Loss' },
+      { icon: '📉', label: '梯度更新' },
+      { icon: '🎯', label: '供下游使用' },
+    ],
+    flowLoop: '↩ 定期用新偏好数据 refresh，对抗 RM Hacking',
+  },
+
+  // ===== DPO =====
+  dpo: {
+    carStory: `RLHF 要训 4 个模型（SFT、RM、Actor、Critic），又贵又不稳定。
+      <b>DPO 的核心观察</b>：RLHF 的最优策略对 RM 有一个漂亮的<b>闭式解</b>——
+      把这个闭式解反代入偏好损失，RM 项会被完美消掉！
+      最后只剩一个监督式损失：<b>让 chosen 回答的对数概率比 rejected 的更高</b>。
+      训练只需要 2 个模型（策略 π 和冻结的 π_ref），像 BCE loss 一样简单稳定。`,
+    carStoryExtra: `<b>🔍 推导脉络：</b><br/>
+      ① RLHF 目标：max 𝔼<sub>π</sub>[r(x,y)] − β·KL(π ‖ π<sub>ref</sub>)<br/>
+      ② 闭式最优解：π*(y|x) = (1/Z)·π<sub>ref</sub>(y|x)·exp(r(x,y)/β)<br/>
+      ③ 反解 r(x,y)：r(x,y) = β·log(π*(y|x)/π<sub>ref</sub>(y|x)) + β·log Z<br/>
+      ④ 代入 Bradley-Terry：log Z 在差值中完美抵消！<br/>
+      ⑤ 最终 DPO 损失：L = −log σ(β·log(π(y<sub>w</sub>)/π<sub>ref</sub>(y<sub>w</sub>)) − β·log(π(y<sub>l</sub>)/π<sub>ref</sub>(y<sub>l</sub>)))<br/><br/>
+      <b>💡 直觉：</b>对每对 (y<sub>w</sub>, y<sub>l</sub>)，DPO 让 π 相对 π<sub>ref</sub> <b>更偏向 chosen、更远离 rejected</b>。
+      β 控制偏移幅度：β 大 → 紧贴 π_ref 保守；β 小 → 激进偏移。`,
+    mapping: [
+      { label: 'π（策略）', value: '正在训练的模型（要更新）' },
+      { label: 'π_ref', value: '冻结的 SFT 模型（参考）' },
+      { label: '隐式奖励', value: 'r̂ = β·log(π/π_ref)，无需显式 RM' },
+      { label: 'β', value: '越大越保守，越小越激进' },
+      { label: '训练数据', value: '只需偏好对 (x, y_w, y_l)' },
+    ],
+    pseudocode: [
+      { section: '— DPO 损失（一行搞定 RLHF）—' },
+      { code: 'L<sub>DPO</sub>(π;π<sub>ref</sub>) =', comment: '' },
+      { code: '  𝔼<sub>(x,y<sub>w</sub>,y<sub>l</sub>)</sub>[ −<span class="fn">log</span> σ(', comment: '' },
+      { code: '    β·<span class="fn">log</span>(π(y<sub>w</sub>|x)/π<sub>ref</sub>(y<sub>w</sub>|x))', comment: 'chosen 的相对对数几率' },
+      { code: '    − β·<span class="fn">log</span>(π(y<sub>l</sub>|x)/π<sub>ref</sub>(y<sub>l</sub>|x))', comment: 'rejected 的相对对数几率' },
+      { code: '  )]', comment: '希望前者远大于后者' },
+      { section: '— 训练循环 —' },
+      { code: '<span class="kw">for each</span> batch (x, y<sub>w</sub>, y<sub>l</sub>):', comment: '' },
+      { code: '  计算 logπ(y<sub>w</sub>), logπ<sub>ref</sub>(y<sub>w</sub>), logπ(y<sub>l</sub>), logπ<sub>ref</sub>(y<sub>l</sub>)', comment: '4 次前向' },
+      { code: '  L ← 上述 DPO 损失', comment: '' },
+      { code: '  反向传播仅更新 π（π<sub>ref</sub> 冻结）', comment: '只训一个模型！' },
+    ],
+    flow: [
+      { icon: '📦', label: '加载偏好对' },
+      { icon: '🔢', label: '算 4 个 logp' },
+      { icon: '📐', label: 'DPO 损失' },
+      { icon: '⬆️', label: '仅更新 π' },
+    ],
+    flowLoop: '↩ 下一个 batch',
+  },
+
+  // ===== GRPO =====
+  grpo: {
+    carStory: `<b>PPO 在 LLM 场景的痛点</b>：Critic 是一个和策略同规模的价值网络——70B 的策略 + 70B 的 Critic，
+      显存直接爆炸。<b>GRPO 的聪明之处</b>：不训 Critic！
+      而是<b>对同一个 prompt 生成一组（比如 8 个）回答</b>，用 RM 给每个回答打分，
+      用<b>组内均值作基线、组内标准差归一化</b>得到优势 A_i = (r_i − μ)/σ。
+      这样既不需要 Critic，又保留了 PPO 式的 clip 更新，正是 <b>DeepSeek-R1</b> 成功的关键技术。`,
+    carStoryExtra: `<b>🔍 为什么组采样有效？</b><br/>
+      PPO 里 Critic 的作用是估计 V(s) 作为基线，让高于基线的动作被加强。
+      但在 LLM 里，"一个回答"就是一整个动作，Critic 估 V 的方差极大、效果往往还不如简单基线。<br/><br/>
+      GRPO 发现：既然都要生成回答，为什么不一次多生成几个？
+      <b>组内的平均分自然就是一个无偏基线</b>，组内标准差则提供了自动缩放。
+      这和"多臂老虎机里用 ε-greedy 先探索一圈"是一个哲学。<br/><br/>
+      <b>🎯 DeepSeek-R1 的贡献</b>：证明了在数学推理这种<b>可验证奖励</b>任务上，GRPO + 规则奖励 + 无 SFT 就能让模型自发学会反思、回溯——
+      这被称为 <b>R1-Zero 时刻</b>，开启了 RL-first 训练范式。`,
+    mapping: [
+      { label: '组 G', value: '同一 prompt 生成的 N 个回答 {y_1, ..., y_N}' },
+      { label: 'RM 打分', value: 'r_i = r(x, y_i)' },
+      { label: '组内优势', value: 'A_i = (r_i − μ_G) / σ_G' },
+      { label: 'clip 目标', value: '和 PPO 一样的 ratio × advantage clip' },
+      { label: '无 Critic', value: '省掉 70B 价值网络，显存大幅降低' },
+    ],
+    pseudocode: [
+      { section: '— GRPO 训练循环 —' },
+      { code: '<span class="kw">for each</span> prompt x:', comment: '' },
+      { code: '  生成组 G = {y<sub>1</sub>, ..., y<sub>N</sub>} ∼ π<sub>old</sub>(·|x)', comment: '一次采 N 个回答（如 N=8）' },
+      { code: '  <span class="kw">for</span> i = <span class="num">1..N</span>: r<sub>i</sub> ← r(x, y<sub>i</sub>)', comment: 'RM 给每个打分' },
+      { code: '  μ ← <span class="fn">mean</span>(r), σ ← <span class="fn">std</span>(r)', comment: '组内统计量' },
+      { code: '  A<sub>i</sub> ← (r<sub>i</sub> − μ) / σ', comment: '组内归一化优势' },
+      { code: '  <span class="kw">for</span> each token t <span class="kw">in</span> y<sub>i</sub>:', comment: 'token 级更新' },
+      { code: '    ρ ← π<sub>θ</sub>(t|·)/π<sub>old</sub>(t|·)', comment: '概率比' },
+      { code: '    L<sub>clip</sub> ← <span class="fn">min</span>(ρ·A<sub>i</sub>, <span class="fn">clip</span>(ρ, 1−ε, 1+ε)·A<sub>i</sub>)', comment: 'PPO 风格 clip' },
+      { code: '  L ← L<sub>clip</sub> − β·KL(π<sub>θ</sub> ‖ π<sub>ref</sub>)', comment: '加 KL 惩罚' },
+      { code: '  θ ← θ + η·∇L', comment: '' },
+    ],
+    flow: [
+      { icon: '📝', label: '给 prompt' },
+      { icon: '🎰', label: '生成一组回答' },
+      { icon: '⚖️', label: 'RM 打分' },
+      { icon: '📊', label: '组内归一化' },
+      { icon: '✂️', label: 'clip 更新' },
+    ],
+    flowLoop: '↩ 下一个 prompt',
+  },
+
+  // ===== 四法全景对比 =====
+  'align-compare': {
+    carStory: `学完 RLHF / DPO / GRPO 之后，实战中到底选哪个？这里给你一张全景地图：
+      <b>数据只有偏好对、算力有限</b> → 选 <b>DPO</b>，最简单稳定；
+      <b>追求极致效果、算力充足、线上有用户反馈</b> → 选 <b>RLHF-PPO</b>，上限最高；
+      <b>要做推理/数学/代码这类可验证奖励任务</b> → 选 <b>GRPO</b>，省掉 Critic 还能用规则奖励。
+      每种方法都对应不同的数据形态、成本预算和业务目标。`,
+    mapping: [
+      { label: 'RLHF-PPO', value: 'ChatGPT/Claude/Llama3 等主流产品' },
+      { label: 'DPO', value: 'Zephyr / Llama3-Instruct 等开源精调' },
+      { label: 'GRPO', value: 'DeepSeek-R1 / DeepSeek-Math 等推理模型' },
+      { label: 'Constitutional AI', value: 'Claude 的 RLAIF，用 AI 替代人类标注' },
+      { label: '选型三原则', value: '数据形态 + 算力预算 + 业务目标' },
+    ],
+    flow: [
+      { icon: '❓', label: '有什么数据？' },
+      { icon: '💰', label: '算力预算？' },
+      { icon: '🎯', label: '业务目标？' },
+      { icon: '✅', label: '选型完成' },
+    ],
+    flowLoop: '↩ 跑起来之后根据指标再迭代',
+  },
 };

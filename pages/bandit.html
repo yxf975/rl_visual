@@ -16,12 +16,16 @@
     <h1 class="page-title">🎰 多臂老虎机</h1>
     <p class="page-desc">探索（Exploration）与利用（Exploitation）的权衡 — 强化学习的起点。</p>
 
-    <!-- 核心概念提示条 -->
+    <!-- 核心概念提示条：场景介绍 -->
     <div class="bg-gradient-to-r from-brand-100 to-pink-100 border-l-4 border-brand-500 rounded-lg p-4 mb-6">
       <p class="text-sm leading-relaxed">
-        <b>🎯 场景：</b>你面前有 N 台老虎机，每台的中奖概率不同且未知。每次你只能拉一台，你希望在有限次数内获得最多奖励。
+        <b>🎯 场景介绍：</b>你面前有 N 台老虎机，每台的中奖概率不同且未知。每次你只能拉一台，希望在有限次数内获得最多奖励。<br/>
+        ⚠️ <b>注意：它不是完整的 RL</b>——这里只有"动作"和"奖励"，<b>没有状态转移</b>（你拉哪台不会改变环境）。它是用来引出"探索 vs 利用"这颗 RL 最小种子的。本页提供三种场景：① 标准 5 臂 ② 10 臂更大池 ③ 非平稳 5 臂。
       </p>
     </div>
+
+    <!-- 目标说明卡锚点：放在"原理讲解"之后、"交互控件"之前 -->
+    <div id="goal-slot"></div>
 
     <!-- 控制面板 -->
     <div class="panel mb-6">

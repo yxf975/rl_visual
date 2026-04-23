@@ -14,9 +14,13 @@
 
     <div class="bg-gradient-to-r from-brand-100 to-pink-100 border-l-4 border-brand-500 rounded-lg p-4 mb-6">
       <p class="text-sm leading-relaxed">
-        <b>🎯 MDP 五元组：</b>&lt;状态 S, 动作 A, 转移 P, 奖励 R, 折扣 γ&gt;。机器人 🤖 从 🏁 出发，想尽快到 💎，躲开 💣。
+        <b>🎯 MDP 五元组：</b>&lt;状态 S, 动作 A, 转移 P, 奖励 R, 折扣 γ&gt;。<br/>
+        <b>🎯 场景介绍：</b>一个 <b>4×4 网格世界</b>——机器人 🤖 从左上角 🏁 出发，想到右下角 💎 拿宝藏，沿途要避开 💣 陷阱；每走一步都有代价。
       </p>
     </div>
+
+    <!-- 目标说明卡锚点：放在"原理讲解"之后、"交互控件"之前 -->
+    <div id="goal-slot"></div>
 
     <div class="grid md:grid-cols-3 gap-5 mb-6">
       <div class="panel md:col-span-2">

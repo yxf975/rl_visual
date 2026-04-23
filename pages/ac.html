@@ -13,6 +13,10 @@
     <h1 class="page-title">🎬 Actor-Critic</h1>
     <p class="page-desc">演员（策略网络）+ 评论家（价值网络）协同学习，用 TD 误差替代完整回报</p>
 
+    <div class="bg-gradient-to-r from-brand-100 to-pink-100 border-l-4 border-brand-500 rounded-lg p-4 mb-6 text-sm leading-relaxed">
+      <b>🎯 场景介绍：</b>同样是 <b>CartPole 倒立摆</b>环境，但这里用 <b>Actor-Critic 架构</b>：策略网（Actor）负责选动作，价值网（Critic）实时评估当前状态好坏，两者通过 TD 误差 δ 协同更新。
+    </div>
+
     <div class="panel mb-6">
       <h3>🏗️ 双网络架构</h3>
       <div class="grid grid-cols-1 md:grid-cols-5 gap-3 items-center text-center">
@@ -35,6 +39,9 @@
         </div>
       </div>
     </div>
+
+    <!-- 目标说明卡锚点：放在"原理讲解/架构图"之后、"交互控件"之前 -->
+    <div id="goal-slot"></div>
 
     <div class="panel mb-6">
       <div class="flex items-center flex-wrap gap-4">

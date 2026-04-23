@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>🎁 DPO · 图解强化学习</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+  <link rel="stylesheet" href="../css/global.css" />
+  <script>tailwind.config={theme:{extend:{colors:{brand:{500:'#8b5cf6',600:'#7c3aed',100:'#ede9fe'}}}}}</script>
+  <style>
+    .derive-step { background: white; border: 2px solid #ede9fe; border-radius: 1rem; padding: 1rem 1.25rem; transition: all 0.3s; opacity: 0.4; }
+    .derive-step.active { opacity: 1; border-color: #8b5cf6; box-shadow: 0 6px 20px rgba(139,92,246,0.25); transform: translateX(6px); }
+    .derive-step .num { display: inline-block; width: 1.75rem; height: 1.75rem; border-radius: 9999px; background: #ede9fe; color: #7c3aed; text-align: center; line-height: 1.75rem; font-weight: 800; margin-right: 0.5rem; }
+    .derive-step.active .num { background: #8b5cf6; color: white; }
+    .formula { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 0.95rem; background: #f9fafb; border-radius: 0.5rem; padding: 0.65rem 0.9rem; display: block; margin-top: 0.4rem; overflow-x: auto; }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-brand-50 via-white to-pink-50 min-h-screen">
+  <div class="page-container">
+    <h1 class="page-title">🎁 DPO · 直接偏好优化</h1>
+    <p class="page-desc">跳过 RM，跳过 PPO —— 用一行监督式损失完成对齐</p>
+
+    <div class="bg-gradient-to-r from-brand-100 to-pink-100 border-l-4 border-brand-500 rounded-lg p-4 mb-6">
+      <p class="text-sm leading-relaxed">
+        <b>🎯 场景介绍：</b>一张<b>数学推导动画</b>带你走一遍 DPO 的漂亮闭式解：
+        从 RLHF 目标 → 最优策略闭式解 → 反解奖励 → 代入 Bradley-Terry → 得到 DPO loss。
+        再配上 <b>logprob 演化曲线</b>和 <b>RLHF vs DPO 训练成本对比</b>，一次看透 DPO 为什么这么香。
+      </p>
+    </div>
+
+    <div id="goal-slot"></div>
+
+    <!-- 数学推导可视化（5 步动画） -->
+    <div class="panel mb-6">
+      <h3>📐 从 RLHF 到 DPO：5 步闭式推导</h3>
+      <div class="flex items-center gap-3 flex-wrap mb-4">
+        <button id="derive-play" class="btn-primary">▶ 播放推导</button>
+        <button id="derive-prev" class="btn-secondary">◀ 上一步</button>
+        <button id="derive-next" class="btn-secondary">下一步 ▶</button>
+        <button id="derive-reset" class="btn-secondary">↻ 重置</button>
+        <span class="text-sm text-gray-500">当前步：<b id="derive-step-val" class="text-brand-600">1</b> / 5</span>
+      </div>
+
+      <div class="space-y-3" id="derive-list">
+        <div class="derive-step" data-idx="1">
+          <div><span class="num">1</span><b>出发点：RLHF 的优化目标</b></div>
+          <span class="formula">max<sub>π</sub>  𝔼<sub>x,y∼π</sub>[ r(x,y) ] − β · KL( π(·|x) ‖ π<sub>ref</sub>(·|x) )</span>
+          <p class="text-xs text-gray-600 mt-2">既要最大化奖励，又要限制偏离参考模型的程度。</p>
+        </div>
+        <div class="derive-step" data-idx="2">
+          <div><span class="num">2</span><b>最优策略的闭式解</b></div>
+          <span class="formula">π*(y|x) = (1/Z(x)) · π<sub>ref</sub>(y|x) · exp( r(x,y) / β )</span>
+          <p class="text-xs text-gray-600 mt-2">用拉格朗日乘数法可推出：最优策略是参考模型乘上指数化奖励，Z(x) 是归一化常数。</p>
+        </div>
+        <div class="derive-step" data-idx="3">
+          <div><span class="num">3</span><b>反解奖励函数</b></div>
+          <span class="formula">r(x,y) = β · log( π*(y|x) / π<sub>ref</sub>(y|x) ) + β · log Z(x)</span>
+          <p class="text-xs text-gray-600 mt-2">把上一步两边取 log 重新整理，把奖励 r 用策略和参考模型表达出来。这一步是魔法的关键！</p>
+        </div>
+        <div class="derive-step" data-idx="4">
+          <div><span class="num">4</span><b>代入 Bradley-Terry 偏好模型</b></div>
+          <span class="formula">P(y<sub>w</sub>≻y<sub>l</sub>|x) = σ( r(x,y<sub>w</sub>) − r(x,y<sub>l</sub>) )</span>
+          <span class="formula">          = σ( β·log(π*(y<sub>w</sub>)/π<sub>ref</sub>(y<sub>w</sub>)) − β·log(π*(y<sub>l</sub>)/π<sub>ref</sub>(y<sub>l</sub>)) )</span>
+          <p class="text-xs text-gray-600 mt-2">代入 r 的表达式，<b>log Z(x) 在差值中完美抵消！</b>这意味着我们不需要知道 Z，也不需要 RM。</p>
+        </div>
+        <div class="derive-step" data-idx="5">
+          <div><span class="num">5</span><b>DPO Loss（最大似然即可）</b></div>
+          <span class="formula">L<sub>DPO</sub> = − log σ( β·log(π<sub>θ</sub>(y<sub>w</sub>)/π<sub>ref</sub>(y<sub>w</sub>)) − β·log(π<sub>θ</sub>(y<sub>l</sub>)/π<sub>ref</sub>(y<sub>l</sub>)) )</span>
+          <p class="text-xs text-gray-600 mt-2">这就是最终的 DPO 损失函数！一个普通的监督学习目标，只需偏好对，不需要 RM，不需要采样，不需要 Critic。</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 直觉：隐式奖励 -->
+    <div class="panel mb-6">
+      <h3>💡 直觉：DPO 的"隐式奖励"</h3>
+      <div class="grid md:grid-cols-2 gap-5">
+        <div>
+          <p class="text-sm leading-relaxed mb-3">DPO 没有显式 RM，但它其实藏了一个"<b>隐式奖励</b>"：</p>
+          <div class="bg-brand-50 rounded-lg p-3">
+            <div class="formula" style="background:white;">r̂(x,y) = β · log( π<sub>θ</sub>(y|x) / π<sub>ref</sub>(y|x) )</div>
+            <p class="text-xs text-gray-600 mt-2">策略相对参考模型偏好 y 的程度，就是 DPO 心中这个 y 的奖励。</p>
+          </div>
+        </div>
+        <div>
+          <p class="text-sm leading-relaxed mb-3">训练时 DPO 在做什么：</p>
+          <ul class="text-sm space-y-2">
+            <li>✅ 让 r̂(y<sub>w</sub>) 上升 → π 更偏向 chosen</li>
+            <li>✅ 让 r̂(y<sub>l</sub>) 下降 → π 更远离 rejected</li>
+            <li>🛡️ β 控制强度：β 大 → 紧贴 π_ref；β 小 → 激进偏移</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- logprob 演化曲线 -->
+    <div class="panel mb-6">
+      <h3>📊 训练中 logprob 如何演化</h3>
+      <p class="text-sm text-gray-600 mb-3">拖动 β 观察：β 越小偏移越激进，β 越大曲线越平缓。</p>
+      <div class="flex items-center gap-4 flex-wrap mb-3">
+        <label class="text-sm font-semibold">β = <span id="beta-val" class="text-brand-600 font-bold">0.10</span></label>
+        <input type="range" id="beta" min="0.02" max="0.5" step="0.01" value="0.1" class="flex-1 min-w-[260px]" />
+      </div>
+      <div id="dpo-chart" class="chart-box" style="height:320px"></div>
+      <p class="text-xs text-gray-500 mt-2 text-center">纵轴：log π(y|x) − log π_ref(y|x)，即策略相对参考模型对 y 的偏好程度</p>
+    </div>
+
+    <!-- RLHF vs DPO 成本对比 -->
+    <div class="panel mb-6">
+      <h3>💰 RLHF vs DPO 训练成本</h3>
+      <div class="grid md:grid-cols-2 gap-5">
+        <div>
+          <h4 class="font-bold text-red-600 mb-3">❌ RLHF-PPO（4 模型）</h4>
+          <div class="space-y-2">
+            <div class="flex items-center gap-3"><span class="w-28 text-xs font-bold text-pink-600">🎭 π</span><div class="mem-bar" style="height:24px;border-radius:6px;display:flex;align-items:center;justify-content:flex-end;padding-right:0.6rem;color:white;font-weight:700;font-size:0.75rem;background:#ec4899;width:95%">14 GB · 训练</div></div>
+            <div class="flex items-center gap-3"><span class="w-28 text-xs font-bold text-amber-600">📖 π_ref</span><div class="mem-bar" style="height:24px;border-radius:6px;display:flex;align-items:center;justify-content:flex-end;padding-right:0.6rem;color:white;font-weight:700;font-size:0.75rem;background:#f59e0b;width:48%">7 GB</div></div>
+            <div class="flex items-center gap-3"><span class="w-28 text-xs font-bold text-sky-600">🎬 V</span><div class="mem-bar" style="height:24px;border-radius:6px;display:flex;align-items:center;justify-content:flex-end;padding-right:0.6rem;color:white;font-weight:700;font-size:0.75rem;background:#0ea5e9;width:95%">14 GB · 训练</div></div>
+            <div class="flex items-center gap-3"><span class="w-28 text-xs font-bold text-emerald-600">⚖️ RM</span><div class="mem-bar" style="height:24px;border-radius:6px;display:flex;align-items:center;justify-content:flex-end;padding-right:0.6rem;color:white;font-weight:700;font-size:0.75rem;background:#10b981;width:48%">7 GB</div></div>
+          </div>
+          <div class="mt-3 bg-red-50 border-l-4 border-red-400 p-3 text-sm"><b>总计 ≈ 42 GB</b> · 需要在线采样 · 超参多 · 不稳定</div>
+        </div>
+        <div>
+          <h4 class="font-bold text-green-600 mb-3">✅ DPO（2 模型）</h4>
+          <div class="space-y-2">
+            <div class="flex items-center gap-3"><span class="w-28 text-xs font-bold text-pink-600">🎭 π</span><div class="mem-bar" style="height:24px;border-radius:6px;display:flex;align-items:center;justify-content:flex-end;padding-right:0.6rem;color:white;font-weight:700;font-size:0.75rem;background:#ec4899;width:95%">14 GB · 训练</div></div>
+            <div class="flex items-center gap-3"><span class="w-28 text-xs font-bold text-amber-600">📖 π_ref</span><div class="mem-bar" style="height:24px;border-radius:6px;display:flex;align-items:center;justify-content:flex-end;padding-right:0.6rem;color:white;font-weight:700;font-size:0.75rem;background:#f59e0b;width:48%">7 GB</div></div>
+            <div class="flex items-center gap-3 opacity-30"><span class="w-28 text-xs font-bold line-through">🎬 V</span><div style="height:24px;width:5%;background:#cbd5e1;border-radius:6px;"></div></div>
+            <div class="flex items-center gap-3 opacity-30"><span class="w-28 text-xs font-bold line-through">⚖️ RM</span><div style="height:24px;width:5%;background:#cbd5e1;border-radius:6px;"></div></div>
+          </div>
+          <div class="mt-3 bg-green-50 border-l-4 border-green-400 p-3 text-sm"><b>总计 ≈ 21 GB</b>（节省 50%）· 无需采样 · 像 BCE 一样稳定</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 优缺点小结 -->
+    <div class="grid md:grid-cols-2 gap-4">
+      <div class="panel">
+        <h3>✅ DPO 的强项</h3>
+        <ul class="text-sm space-y-2 text-gray-700">
+          <li>🎯 训练稳定：本质是监督学习</li>
+          <li>💰 成本低：只需 2 个模型，无需 Critic/RM</li>
+          <li>⚡ 无需在线采样：离线偏好数据即可</li>
+          <li>🛠️ 实现简单：几十行代码即可跑通</li>
+          <li>📚 数据效率高：同一批偏好数据即可直接训练</li>
+        </ul>
+      </div>
+      <div class="panel">
+        <h3>⚠️ DPO 的局限</h3>
+        <ul class="text-sm space-y-2 text-gray-700">
+          <li>🔒 依赖 π_ref 质量：SFT 不好 → DPO 上限受限</li>
+          <li>📊 无法利用在线采样的新数据分布</li>
+          <li>🎢 β 仍需调参，过小会导致 logprob 崩溃</li>
+          <li>🔬 效果天花板略低于充分调优的 RLHF-PPO</li>
+          <li>💡 对"长度偏见"敏感（可用 Length-Normalized DPO 缓解）</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="../js/pages/dpo.js"></script>
+</body>
+</html>

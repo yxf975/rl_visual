@@ -140,6 +140,53 @@ body { font-family: 'PingFang SC', 'Microsoft YaHei', system-ui, -apple-system, 
 .feature-card:hover { transform: translateY(-4px); }
 
 /* ========== 通用页面专属组件：训练目标卡、读懂动画、场景选择 ========== */
+
+/* 交互说明书外层（包裹 goal-card），作为"动手玩"模块的入口 */
+.play-intro-wrap {
+  margin: 1.5rem 0 1rem;
+  padding: 0;
+  position: relative;
+}
+.play-intro-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding: 0 0.25rem;
+  margin-bottom: 0.5rem;
+}
+.play-intro-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.15rem;
+  font-weight: 900;
+  color: #1f2937;
+  letter-spacing: 0.01em;
+}
+.play-intro-title::after {
+  content: '';
+  display: inline-block;
+  width: 2.5rem;
+  height: 3px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #f59e0b, #ec4899);
+  margin-left: 0.5rem;
+}
+.play-intro-emoji {
+  font-size: 1.5rem;
+  filter: drop-shadow(0 2px 4px rgba(245,158,11,0.3));
+}
+.play-intro-sub {
+  font-size: 0.78rem;
+  color: #6b7280;
+  line-height: 1.5;
+  flex: 1 1 260px;
+  min-width: 0;
+  text-align: right;
+}
+
 .goal-card {
   background: linear-gradient(135deg, #fef3c7, #fde68a);
   border: 2px solid #f59e0b;
@@ -148,18 +195,86 @@ body { font-family: 'PingFang SC', 'Microsoft YaHei', system-ui, -apple-system, 
   margin-bottom: 1rem;
   position: relative;
 }
+/* 当 goal-card 在 play-intro-wrap 内时，不再显示浮动徽章（标题已在 wrapper 中） */
+.play-intro-wrap .goal-card { margin-bottom: 0.25rem; }
 .goal-card::before {
-  content: '🎯 训练目标';
-  position: absolute; top: -0.75rem; left: 1rem;
-  background: #f59e0b; color: white;
-  padding: 0.15rem 0.75rem; border-radius: 9999px;
-  font-size: 0.75rem; font-weight: 900;
-  letter-spacing: 0.05em;
+  content: '';
+  display: none;
 }
 .goal-card p { font-size: 0.9rem; color: #78350f; line-height: 1.7; margin: 0.25rem 0; }
 .goal-card b { color: #b45309; }
 .goal-card ul { font-size: 0.85rem; color: #78350f; line-height: 1.7; padding-left: 1.1rem; }
 .goal-card ul li::marker { color: #d97706; }
+
+/* ========== goal-card v2 · 瘦身版"交互说明"（2026-04 重构） ========== */
+/* 不再承载"环境是什么"（已并入页面顶部紫条），仅保留三行与交互直接相关的说明 */
+.play-intro-wrap-v2 {
+  margin: 1.25rem 0 0.75rem;
+}
+.play-intro-header-v2 {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.25rem 0.9rem 0.3rem;
+  margin: 0 0 0.55rem 0.1rem;
+  background: linear-gradient(135deg, #fff7ed, #fde68a);
+  border-radius: 9999px 9999px 0 9999px;
+  border: 1.5px solid #fbbf24;
+  box-shadow: 0 2px 6px rgba(245, 158, 11, 0.18);
+}
+.play-intro-header-v2 .play-intro-emoji {
+  font-size: 1.15rem;
+  filter: drop-shadow(0 1px 2px rgba(245,158,11,0.35));
+}
+.play-intro-header-v2 .play-intro-title-text {
+  font-size: 0.92rem;
+  font-weight: 800;
+  color: #92400e;
+  letter-spacing: 0.02em;
+}
+.goal-card.goal-card-v2 {
+  padding: 0.85rem 1.1rem 0.9rem;
+  border-radius: 0.85rem;
+  border-width: 1.5px;
+  background: linear-gradient(135deg, #fffbeb, #fef3c7);
+  margin-bottom: 0.85rem;
+}
+.goal-card.goal-card-v2 .goal-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0.22rem 0;
+  font-size: 0.87rem;
+  line-height: 1.65;
+  color: #78350f;
+}
+.goal-card.goal-card-v2 .goal-row + .goal-row {
+  border-top: 1px dashed rgba(217, 119, 6, 0.35);
+  margin-top: 0.22rem;
+  padding-top: 0.45rem;
+}
+.goal-card.goal-card-v2 .goal-row-icon {
+  flex-shrink: 0;
+  font-size: 1.05rem;
+  line-height: 1.6;
+  width: 1.4rem;
+  text-align: center;
+}
+.goal-card.goal-card-v2 .goal-row-body { flex: 1; min-width: 0; }
+.goal-card.goal-card-v2 .goal-row-body b { color: #b45309; }
+.goal-card.goal-card-v2 .goal-metrics-list {
+  margin: 0.3rem 0 0;
+  padding-left: 1rem;
+  font-size: 0.82rem;
+  line-height: 1.65;
+  color: #78350f;
+}
+.goal-card.goal-card-v2 .goal-metrics-list li {
+  padding: 0.08rem 0;
+}
+.goal-card.goal-card-v2 .goal-metrics-list li::marker { color: #d97706; }
+
+/* 保持和旧紫色提示条一致的视觉定位：让 v2 版黄卡与紫条呼应 */
 
 .explain-card {
   background: linear-gradient(135deg, #dbeafe, #e0e7ff);
@@ -1019,4 +1134,166 @@ input[type="range"] { accent-color: #8b5cf6; }
   .flow-step { min-width: 60px; font-size: 0.72rem; padding: 0.4rem 0.6rem; }
   .car-mapping { gap: 0.35rem; }
   .car-mapping-item { font-size: 0.7rem; padding: 0.2rem 0.5rem; }
+}
+
+/* ========== 顶部导航 · 5 篇章主分类 + 悬停下拉 ========== */
+.nav-main {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  flex-wrap: wrap;
+  font-size: 0.82rem;
+}
+.nav-main-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.4rem 0.75rem;
+  border-radius: 0.6rem;
+  color: #4b5563;
+  font-weight: 600;
+  transition: all 0.15s;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.nav-main-item:hover { background: #ede9fe; color: #6d28d9; }
+.nav-main-item.active { background: #8b5cf6; color: #fff; }
+.nav-main-item.active:hover { background: #7c3aed; color: #fff; }
+.nav-main-trigger { user-select: none; }
+.nav-caret {
+  font-size: 0.65rem;
+  margin-left: 0.1rem;
+  opacity: 0.65;
+  transition: transform 0.2s;
+}
+.nav-main-extra {
+  background: linear-gradient(135deg, #fce7f3, #ede9fe);
+  color: #be185d;
+}
+.nav-main-extra:hover {
+  background: linear-gradient(135deg, #fbcfe8, #ddd6fe);
+  color: #9d174d;
+}
+
+/* 分组容器（含下拉） */
+.nav-main-group {
+  position: relative;
+  outline: none;
+}
+.nav-main-group.active > .nav-main-trigger {
+  background: #8b5cf6;
+  color: #fff;
+}
+.nav-main-group.active > .nav-main-trigger .nav-caret { color: #fff; opacity: 0.9; }
+
+/* 下拉面板：默认隐藏 */
+.nav-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 260px;
+  background: #ffffff;
+  border: 1px solid #ede9fe;
+  border-radius: 0.9rem;
+  box-shadow: 0 12px 32px rgba(124, 58, 237, 0.15), 0 2px 8px rgba(0,0,0,0.06);
+  padding: 0.75rem;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-4px);
+  transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s;
+  z-index: 50;
+}
+/* 不可见时创建一个"桥梁"让鼠标从 trigger 滑到 dropdown 不中断 */
+.nav-main-group::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0;
+  top: 100%;
+  height: 8px;
+  display: none;
+}
+.nav-main-group:hover::after,
+.nav-main-group:focus-within::after {
+  display: block;
+}
+
+/* 悬停 / 聚焦（键盘 tab）时展开 */
+.nav-main-group:hover > .nav-dropdown,
+.nav-main-group:focus-within > .nav-dropdown {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+.nav-main-group:hover .nav-caret,
+.nav-main-group:focus-within .nav-caret {
+  transform: rotate(180deg);
+}
+
+.nav-dropdown-title {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #1f2937;
+  margin-bottom: 0.15rem;
+}
+.nav-dropdown-sub {
+  font-size: 0.72rem;
+  color: #6b7280;
+  margin-bottom: 0.55rem;
+  line-height: 1.4;
+}
+.nav-dropdown-items {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border-top: 1px dashed #ede9fe;
+  padding-top: 0.4rem;
+}
+.nav-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.45rem 0.6rem;
+  border-radius: 0.5rem;
+  color: #374151;
+  font-size: 0.82rem;
+  font-weight: 600;
+  transition: background 0.12s, color 0.12s, transform 0.12s;
+}
+.nav-dropdown-item:hover {
+  background: linear-gradient(135deg, #faf5ff, #fdf2f8);
+  color: #6d28d9;
+  transform: translateX(2px);
+}
+.nav-dropdown-item.active {
+  background: #8b5cf6;
+  color: #fff;
+}
+.nav-dropdown-item.active:hover { background: #7c3aed; color: #fff; transform: none; }
+.nav-di-icon { font-size: 1.05rem; }
+.nav-di-name { flex: 1; min-width: 0; }
+
+/* 响应式：中小屏幕下把下拉面板靠右对齐，避免溢出 */
+@media (max-width: 900px) {
+  .nav-main { font-size: 0.78rem; gap: 0.1rem; }
+  .nav-main-item { padding: 0.35rem 0.55rem; }
+  .nav-dropdown { min-width: 240px; }
+  /* 最后两个分组的下拉靠右，避免超出右侧 */
+  .nav-main-group:nth-last-of-type(-n+2) > .nav-dropdown {
+    left: auto;
+    right: 0;
+  }
+}
+@media (max-width: 640px) {
+  .nav-main { width: 100%; justify-content: flex-start; overflow-x: auto; padding-bottom: 4px; }
+  .nav-main::-webkit-scrollbar { height: 3px; }
+  .nav-main::-webkit-scrollbar-thumb { background: #ddd6fe; border-radius: 3px; }
+  /* 移动端：下拉改为全宽展开在触发项下方 */
+  .nav-dropdown {
+    position: fixed;
+    left: 8px;
+    right: 8px;
+    top: auto;
+    min-width: 0;
+    width: auto;
+  }
 }

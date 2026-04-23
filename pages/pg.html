@@ -17,6 +17,15 @@
     <h1 class="page-title">🎭 REINFORCE · 策略梯度</h1>
     <p class="page-desc">最朴素的策略梯度方法：采样一条完整轨迹，直接优化策略 π(a|s)</p>
 
+    <div class="bg-gradient-to-r from-brand-100 to-pink-100 border-l-4 border-brand-500 rounded-lg p-4 mb-6">
+      <p class="text-sm leading-relaxed">
+        <b>🎯 场景介绍：</b><b>CartPole 倒立摆</b>——经典 RL 环境。小车上立着一根可自由旋转的杆，智能体可以<b>左推</b>（动作 0）或<b>右推</b>（动作 1）小车，目标是让杆子尽可能久地不倒。
+      </p>
+    </div>
+
+    <!-- 目标说明卡锚点：放在"原理讲解"之后、"交互控件"之前 -->
+    <div id="goal-slot"></div>
+
     <div class="panel mb-6">
       <div class="flex items-center flex-wrap gap-4">
         <button id="train-btn" class="btn-primary">▶ 训练 100 回合</button>
