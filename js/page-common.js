@@ -55,9 +55,6 @@ export function renderNav(activeId) {
             </div>
           `;
         }).join('')}
-        <a href="../pages/comics.html" class="nav-main-item nav-main-extra">
-          <span>📖</span><span>漫画合集</span>
-        </a>
       </div>
     </div>
   `;
@@ -139,7 +136,6 @@ function renderContextBanner(algo) {
 
 /**
  * 渲染底部章节导航："上一章 / 回到首页 / 下一章"
- * 若 active 在首页或漫画合集页则不渲染
  */
 export function renderChapterNav(algo) {
   if (!algo) return;

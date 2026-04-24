@@ -35,11 +35,10 @@
       <div class="hidden md:flex items-center gap-1 text-sm">
         <a href="#chapters-root" class="px-3 py-1.5 rounded-lg hover:bg-brand-100 text-brand-700 font-medium">📚 全部章节</a>
         <a href="#learning-path" class="px-3 py-1.5 rounded-lg hover:bg-brand-100">🧭 学习路径</a>
-        <a href="pages/comics.html" class="px-3 py-1.5 rounded-lg hover:bg-brand-100">📖 精读合集</a>
         <a href="pages/bandit.html" class="px-3 py-1.5 rounded-lg hover:bg-brand-100">🎰 快速开始</a>
       </div>
-      <a href="pages/comics.html" class="hidden md:inline-flex items-center gap-1 px-4 py-2 rounded-full bg-gradient-to-r from-pink-400 to-brand-500 text-white text-sm font-bold shadow hover:scale-105 transition">
-        📖 精读合集
+      <a href="pages/intro.html" class="hidden md:inline-flex items-center gap-1 px-4 py-2 rounded-full bg-gradient-to-r from-brand-500 to-brand-600 text-white text-sm font-bold shadow hover:scale-105 transition">
+        🚀 从零开始
       </a>
     </div>
   </nav>
@@ -65,7 +64,6 @@
     <div class="flex flex-wrap items-center justify-center gap-3 mt-6">
       <a href="pages/intro.html" class="px-6 py-3 rounded-full bg-brand-600 hover:bg-brand-700 text-white font-bold shadow-lg shadow-brand-200 transition">🚀 从零开始（初探 RL）</a>
       <a href="#chapters-root" class="px-6 py-3 rounded-full bg-white border-2 border-brand-300 text-brand-700 font-bold hover:bg-brand-50 transition">📖 查看全部篇章</a>
-      <a href="pages/comics.html" class="px-6 py-3 rounded-full bg-gradient-to-r from-pink-500 to-brand-600 text-white font-bold shadow-lg transition">🎨 只看漫画</a>
     </div>
   </header>
 
@@ -79,20 +77,60 @@
   <!-- 如何使用本站 -->
   <section class="max-w-7xl mx-auto px-4 py-6">
     <div class="bg-gradient-to-r from-brand-50 to-pink-50 rounded-2xl p-6 border-2 border-dashed border-brand-200">
-      <h3 class="font-bold text-lg mb-3">💡 如何使用本站</h3>
-      <div class="grid md:grid-cols-3 gap-4 text-sm">
-        <div>
-          <div class="font-bold text-brand-600 mb-1">① 看漫画建直觉</div>
-          <p class="text-gray-600">每章右上角有 🎨 漫画讲解 按钮，用 14-20 格连环画告诉你算法"为什么这样设计"。</p>
+      <div class="flex items-end justify-between mb-4 flex-wrap gap-2">
+        <h3 class="font-bold text-lg">💡 如何使用本站</h3>
+        <span class="text-xs text-gray-500">每个算法页都内置下面这几种阅读方式，按你的偏好自由切换</span>
+      </div>
+      <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
+        <!-- ① 顺路径学 -->
+        <a href="pages/intro.html" class="block bg-white/70 rounded-xl p-4 border border-brand-100 hover:border-brand-400 hover:bg-white transition">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="text-xl">🧭</span>
+            <span class="font-bold text-brand-700">① 顺路径学</span>
+          </div>
+          <p class="text-gray-600 leading-relaxed">从<b>第一篇</b>顺序读到<b>第五篇</b>，每页底部都有"上一章 / 下一章"导航和过渡文案，循序渐进建立完整知识图谱。</p>
+          <div class="text-xs text-brand-600 mt-2 font-semibold">→ 从「初探 RL」开始</div>
+        </a>
+
+        <!-- ② 通俗理解 -->
+        <a href="pages/ppo.html" class="block bg-white/70 rounded-xl p-4 border border-brand-100 hover:border-brand-400 hover:bg-white transition">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="text-xl">🍵</span>
+            <span class="font-bold text-brand-700">② 通俗理解</span>
+          </div>
+          <p class="text-gray-600 leading-relaxed">每章都配一篇<b>零公式散文</b>，像和朋友聊天一样讲清算法"为什么这样设计"。打开算法页点顶部「🍵 通俗理解」即可阅读。</p>
+          <div class="text-xs text-brand-600 mt-2 font-semibold">→ 举例：PPO 的通俗讲解</div>
+        </a>
+
+        <!-- ③ 深入学习 -->
+        <a href="pages/mdp.html" class="block bg-white/70 rounded-xl p-4 border border-brand-100 hover:border-brand-400 hover:bg-white transition">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="text-xl">📐</span>
+            <span class="font-bold text-brand-700">③ 深入学习</span>
+          </div>
+          <p class="text-gray-600 leading-relaxed">想看<b>公式推导、伪代码和工程坑点</b>？切到「📐 深入学习」版本，结构化章节 + LaTeX 公式 + 对比表一次到位。</p>
+          <div class="text-xs text-brand-600 mt-2 font-semibold">→ 举例：MDP 的深入讲解</div>
+        </a>
+
+        <!-- ④ 动手玩 -->
+        <a href="pages/bandit.html" class="block bg-white/70 rounded-xl p-4 border border-brand-100 hover:border-brand-400 hover:bg-white transition">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="text-xl">🎮</span>
+            <span class="font-bold text-brand-700">④ 动手玩动画</span>
+          </div>
+          <p class="text-gray-600 leading-relaxed">算法页内置<b>可调参数 + 实时动画</b>，多个算法还支持切换可视化场景（CartPole / 寻宝 / 追踪…）。"训练目标卡"和"读懂动画"面板帮你看懂每个元素。</p>
+          <div class="text-xs text-brand-600 mt-2 font-semibold">→ 从多臂老虎机开始玩</div>
+        </a>
+      </div>
+
+      <!-- 漫画版本：占位·敬请期待 -->
+      <div class="mt-4 flex items-center gap-3 bg-white/50 rounded-xl p-3 border border-dashed border-brand-300 text-sm">
+        <span class="text-2xl">🎨</span>
+        <div class="flex-1">
+          <span class="font-bold text-gray-700">漫画版讲解</span>
+          <span class="text-gray-500 ml-2">原创连环画 + 萌系角色，用故事建立直觉 —— 内容筹备中，敬请期待。</span>
         </div>
-        <div>
-          <div class="font-bold text-brand-600 mb-1">② 动手玩动画</div>
-          <p class="text-gray-600">所有关键算法都有可调参数+实时动画。每个动画都附带"读懂动画"说明面板。</p>
-        </div>
-        <div>
-          <div class="font-bold text-brand-600 mb-1">③ 看训练目标</div>
-          <p class="text-gray-600">页面顶部的"训练目标卡"会告诉你：这个环境在干嘛、什么叫做成功、应该观察哪些指标。</p>
-        </div>
+        <span class="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-700 text-xs font-bold">Coming Soon</span>
       </div>
     </div>
   </section>
